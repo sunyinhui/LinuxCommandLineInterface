@@ -590,23 +590,87 @@ LFS: Linux from Scratch 从0开始构建Linux
 	位置变量
 	特殊变量
 	
-	本地变量 
+	本地变量 VarName=Value  即可，在整个bash脚本中都可以使用。 set VarName=Value  set 可以省略 
 	引用变量 $(VarName) :括号可以省略 ，在不至于变量名称混淆时可以省略。
-	eg: #ANIMAL=pig
-		#echo "There are some $ANIMALs."   最后输出There are some .
-		#echo "There are some ${ANIMAL}s." 最后输出There are some pigs.
-		#echo 'There are some ${ANIMAL}s.' 最后输出There are some $(ANIMAL)s.
-		
-		
+			eg: #ANIMAL=pig
+				#echo "There are some $ANIMALs."   最后输出There are some .
+				#echo "There are some ${ANIMAL}s." 最后输出There are some pigs.
+				#echo 'There are some ${ANIMAL}s.' 最后输出There are some $(ANIMAL)s.
+	
 		bash支持的引号：
 		``:命令替换
 		"":弱引用,可以实现变量替换 变量名到变量值的替换
 		'':强引用，不完成变量替换
+	
+	局部变量 作用域只对当段代码有效
+			加上local即可
+			local VarName=Jerry 
+		
+	环境变量：作用域为当前shell进程及其当前子进程
+			export VarName=Value
+			或者
+			VarName=Value
+			export VarName
+			
+	
+		脚本在执行时会启动一个子Shell进程
+			命令行中启动的脚本会继承当前shell环境变量：
+			如果是系统自动执行的脚本(非命令行启动)就需要自我定义需要各环境变量
+	位置变量 
+		$1,$2,... :位置变量是引用脚本的参数
+		
 
+	
+	特殊变量
+		$?：保存上一个命令的执行状态返回值，有时只关心程序的状态结果
+		程序执行完之后，可能有两个返回值
+				1. 程序执行结果
+				2. 程序状态返回代码(0-255)
+					0:正确执行
+					1-255:错误执行。系统预留了1,2,127 有特殊意义 
+		
+		输出重定向
+		>
+		>>
+		2>
+		2>>
+		&>
+		&>>
+		/dev/null:设备，软件设备， bit bucket 位桶，能把所有的吞下去，吃人不吐骨头， 数据黑洞 
+		所以把结果重定向到/dev/null上 ，结果就不会显示出来
+		eg: ls /var &> /dev/null  
+			有时不关心输出结果，只关心状态结果
+			echo $?  查看是否成功 
+			
+			
+			#sunyinhui@slave1:/root$ echo $?
+			#0
+			#sunyinhui@slave1:/root$ ls /varr
+			#ls: cannot access /varr: No such file or directory
+			#sunyinhui@slave1:/root$ echo $?
+			#2
 
+			
+			
+	撤销变量
+		unset VarName 
+	
+	查看当前shell中变量
+		set 
+	查看当前shell环境变量 
+		printenv
+		env
+		export
+		
+	shell中变量的值默认是字符串类型，不能做算术运算的
+		A=2
+		B=3
+		C=$A+$B
+		echo $C
+	
 
-
-
+	
+	
 
 
 
