@@ -562,7 +562,9 @@ LFS: Linux from Scratch 从0开始构建Linux
 	A: 1-127
 	B:128-191
 	C:192-223
-	IP地址匹配
+	
+	IP地址匹配 
+	
 	
 
 30.Shell编程
@@ -581,7 +583,7 @@ LFS: Linux from Scratch 从0开始构建Linux
 	面向对象：
 
 	变量 
-31. 
+31. hello world git 
 
 
 
