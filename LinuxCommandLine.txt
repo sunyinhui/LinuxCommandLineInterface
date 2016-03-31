@@ -668,7 +668,10 @@ LFS: Linux from Scratch 从0开始构建Linux
 		C=$A+$B
 		echo $C
 	
-
+	脚本是命令的堆砌，按照实际需要进行堆砌，结合命令流程控制机制实现的源程序
+	
+	
+	
 	
 	
 
