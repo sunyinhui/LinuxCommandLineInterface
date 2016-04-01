@@ -695,6 +695,8 @@ LFS: Linux from Scratch 从0开始构建Linux
 	如果用户不存在就添加用户：! id user && useradd user 
 	如果用户已经存在，就显示用户已存在，否则，就添加此用户
 		id user && echo "user is exist" || useradd user 
+	如果用户不存在，就添加，并且给密码为用户名，否则，显示其已经存在
+		! id user &&　useadd user && echo "user" | passwd --stdin user || echo "user exists."
 	
 	如果/etc/profile 文件的行数大于30，就输出 "Large file" 
 	[ `wc -l /etc/profile | cut -d' ' -f1` -gt 30  ] && echo "Large file"
@@ -704,13 +706,84 @@ LFS: Linux from Scratch 从0开始构建Linux
 		1.字母、数字、下划线，不能以数字打头，
 		2.不应跟系统中已有的环境变量重名
 		3.要做到见名知意
+
 	
+	练习，写一个脚本，完成以下要求：
+		1. 添加3个用户user1,user2,user3 但要先判断用户是否存在，不存在而后再添加；
+		2. 添加完成后，显示一共添加了几个用户，当然，不能包括因为事先存在而没有添加的
+		3. 最后显示当前系统上共有多少个用户
+			
+		  1 #!/bin/bash
+		  2 
+		  3 ! id user1 &> /dev/null && useradd user1 && echo "user1" | passwd --stdin user1 &> /dev/null || echo "user1 exists."
+		  4 ! id user2 &> /dev/null && useradd user2 && echo "user2" | passwd --stdin user2 &> /dev/null || echo "user2 exists."
+		  5 ! id user3 &> /dev/null && useradd user3 && echo "user3" | passwd --stdin user3 &> /dev/null || echo "user3 exists."
+		  6 USER=`wc -l /etc/passwd | cut -d' ' -f1 `
+		  7 
+		  8 echo $USER users.
+	练习 写一个脚本，完成以下要求：
+		1.如果其UID为0，就显示此为管理员
+		2.否则，就显示其为普通用户
+		
+		  1 #!/bin/bash
+		  2 # UID为0，就显示为管理员，否则就显示为普通用户
+		  3 #
+		  4 
+		  5 NAME=user1
+		  6 USERID=`id  -u $NAME`
+		  7 [ $USERID -eq 0 ] && echo "Admin" || echo "Common user."
 	
+	条件判断，控制结构：
+			注意 当then与if在同一行 ; 不能省略。若then在下一行时，;可以省略。
+		单分支的if语句
+				if 判断条件; then   
+					statement1
+					statement2
+					.....
+				fi
+		双分支的if语句：
+				if 判断条件; then 
+					statement1
+					statement2
+					....
+				else
+					statement3
+					statement4
+					....
+				fi
 	
-	
-	
- 		
-	
+	练习 写一个脚本
+		判断当前系统上是否有用户的默认shell为bash
+		如果有，就显示有多少个这类用户，否则，就显示没有这类用户
+		grep "\bbash$" /etc/passwd &> /dev/null  
+		RETVAL=$? # 获得上一行执行状态结果。
+		if [ $RETVAL -eq 0 ] ; then
+			grep "\bbash$" /etc/passwd | wc -l
+		echo 
+			echo "No such user."
+		fi
+		
+			1 #!/bin/bash
+			2 # 
+			3 grep "\bbash$" /etc/passwd &> /dev/null
+			4 RETVAL=$?
+			5 if [ $RETVAL -eq 0 ]; then
+			6    users=` grep "\bbash$" /etc/passwd | wc -l`           # 命令的引用
+			7    echo "Default shell is bash there  are $users users."
+			8 else 
+			9     echo "No such user."
+			10 fi
+				
+		提示：
+			`引用` 一个命令的执行结果，要使用命令引用，比如 users=`grep "\bbash$" /etc/passwd | wc -l`
+			使用一个命令的执行状态结果，要直接执行此命令，一定不能引用，比如 if id user 一句中的id命令就一定不能加引号
+			如果想把一个命令的执行结果赋给某变量，要使用命令引用，比如 userid=`id -u user`
+			如果想要把一个命令的执行状态结果保留下来，并作为命令执行成功与否的判断标准，则需要先执行此命令，而后引用其状态结果，如
+				id -u user
+				RETVAL=$?
+				此句，绝对不可写为 RETVAL=`id -u user`
+				
+			
 	
 	
 
