@@ -783,11 +783,71 @@ LFS: Linux from Scratch 从0开始构建Linux
 				RETVAL=$?
 				此句，绝对不可写为 RETVAL=`id -u user`
 				
+	练习 写个一个脚本
+		判断当前系统上是否有用户的默认shell为bash；
+		如果有，就显示其中一个的用户名，否则，就显示没有这类用户
+			  1 #!/bin/bash
+			  2 # 
+			  3 grep "\bbash$" /etc/passwd &> /dev/null
+			  4 RETVAL=$?
+			  5 if [ $RETVAL -eq 0 ]; then
+			  6    AUSER=`grep "\bbash$" /etc/passwd | head -1 | cut -d: -f1`
+			  7    echo  " $AUSER  is the such user."
+			  8 else
+			  9     echo "No such user."
+			 10 fi
+	
+	练习 写一个脚本
+		给定一个文件，比如/etc/inittab
+		判断这个文件中是否有空白行
+		如果有，就显示其空白行数，否则，显示没有空白行
+			  1 #!/bin/bash
+			  2 #判断是否存在空白行，若有，就显示行号，否则就显示没有空白行
+			  3 # 
+			  4 
+			  5 grep "^$" /etc/profile &> /dev/null
+			  6 space=$?
+			  7 if [ $space -eq 0 ]; then
+			  8     Num=`grep '^$' /etc/profile | wc -l `
+			  9     echo "the space is local at $Num"
+			 10 fi
+        
+	练习 写一个脚本
+		给定一个用户，判断其UID和GID是否一样
+		如果一样，就显示此用户为“good guy”， 否则 就显示此用户为“bad guy”
+			  1 #!/bin/bash
+			  2 # 判断用户的UID和GID是否一致
+			  3 User=sunyinhui
+			  4 UserUID=`id -u $User`
+			  5 UserGID=`id -g $User`
+			  6 if  [ $UserUID -eq $UserGID ]; then
+			  7     echo "good guy"
+			  8 else
+			  9     echo "bad guy"
+			 10 fi
+		进一步要求，不使用id命令获得其id号 查看 /etc/passwd
+		
+		
 			
+	练习 写一个脚本
+		给定一个用户，获取其密码警告期限；
+		而后判断 用户密码使用期限是否已经小于警告期限； 计算方法，最长使用期限减去已经使用的天数即为剩余使用期限。
+		如果小于，则显示“Warning”;否则 就显示“OK”
+			提示：算术运算的方法 $[$A-$B] 表示变量A的值减去变量B的值的结果。
 	
-	
+	练习 写一个脚本
+		判定命令历史中历史命令的总条目是否大于1000，如果大于，则显示“Some command will gone”，否则显示“OK”
 
-
-
-
+	在shell中进行加减乘除运算
+		A=3
+		B=6
+		1.let命令  help let
+				let expression   如 let C=$A+$B  echo $C
+		2.$[expression]
+			    D=$[$A+$B]  echo $D
+		3 $((算术运算表达式))
+				E=$(($A+$B))  echo $E
+		4 expr 算术运算表达式 ；注意表达式中各操作符及运算符之间要有空格，而且要使用命令引用
+			C=`expr $A + $B`
+		
 	
