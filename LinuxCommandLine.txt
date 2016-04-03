@@ -618,6 +618,79 @@ LFS: Linux from Scratch 从0开始构建Linux
 			如果是系统自动执行的脚本(非命令行启动)就需要自我定义需要各环境变量
 	位置变量 
 		$1,$2,... :位置变量是引用脚本的参数
+		shift  如果参数太多，使用$1-$10,就太麻烦。shift就是当执行过第一个参数后，shift剔除第一个，然后第二个变成第一个参数，依次类推.
+			   shift N 剔除N个 默认剔除1个
+			#!/bin/bash
+			echo $1
+			shift
+			echo $1
+			shift
+			echo $1
+			
+			bash shift.sh /rpp /rop /ddd
+			就会输出 /rpp
+					 /rop
+					 /ddd
+		help shift
+			
+				shift: shift [n]
+				Shift positional parameters.
+				
+				Rename the positional parameters $N+1,$N+2 ... to $1,$2 ...  If N is
+				not given, it is assumed to be 1.
+				
+				Exit Status:
+				Returns success unless N is negative or greater than $#.
+		脚本，写一个脚本
+			给脚本传递一个参数(整数)
+			显示此两者之和，之积。测试给的参数够不够
+				  1 #!/bin/bash
+				  2 # 计算两个参数之和，之积，要测试参数个数
+				  3 # 
+				  4 if [ $# -lt 2 ]; then
+				  5     echo "the arg must be two"
+						echo "Usage: arg1, arg2"
+				  6     exit
+				  7 fi
+				  8 
+				  9 echo "The Sum is :$[$1 + $2]"
+				  10 echo  "The prod is:$[$1*$2]"
+		
+		例如可以查看三个文件
+			cat /etc/inittab /etc/fstab /etc/issue
+			$1:对应的是/etc/inittab参数
+			$2:对应的是/etc/fstab参数
+			$3:对应的是/etc/issue参数
+		练习 写一个脚本 filetest.sh
+			能接受一个参数(文件路径)
+				判断：此参数如果是一个存在的文件，就显示"OK"，否则就显示"No Such File"		
+				  1 #!/bin/bash
+				  2 #
+				  3 if [ -e $1 ]; then
+				  4     echo "OK"
+				  5 else
+				  6     echo "No such file"
+				  7 fi 
+		bash filetest.sh /etc/inittab  :No such file
+		bash filetest.sh /etc/profile : Ok
+		注意 当不给参数时，会输出Ok，所以要考虑这种没有给参数的情况
+				  1 #!/bin/bash
+				  2 #
+				  3 echo $#  #显示参数的个数
+				  4 echo $*  #显示参数列表
+				  5 echo $@  #显示参数列表
+				  6 
+				  7 if [  $# -lt 1 ]; then
+				  8     echo "Usage: bash filetest.sh arg1 [arg2...] "
+				  9     exit 1
+				 10 fi  
+				 11 
+				 12 if [ ! -e $1 ]; then
+				 13     echo "No such file"
+				 14     exit 1
+				 15 else
+				 16     echo "Ok"
+				 17 fi
 		
 
 	
@@ -628,6 +701,9 @@ LFS: Linux from Scratch 从0开始构建Linux
 				2. 程序状态返回代码(0-255)
 					0:正确执行
 					1-255:错误执行。系统预留了1,2,127 有特殊意义 
+		$#: 参数的个数 
+		$*：参数列表
+		$@：参数列表
 		
 		输出重定向
 		>
@@ -641,8 +717,6 @@ LFS: Linux from Scratch 从0开始构建Linux
 		eg: ls /var &> /dev/null  
 			有时不关心输出结果，只关心状态结果
 			echo $?  查看是否成功 
-			
-			
 			#sunyinhui@slave1:/root$ echo $?
 			#0
 			#sunyinhui@slave1:/root$ ls /varr
@@ -764,6 +838,26 @@ LFS: Linux from Scratch 从0开始构建Linux
 					statement4
 					....
 				fi
+		多分支的if语句
+			if 判断条件1; then
+				statement1
+				...
+			elif 判断条件2; then
+				statement2
+				...
+			elif 判断条件3; then
+				statement3
+				...
+			else 
+				statement4
+				...
+			fi
+			
+	bash 有测试脚本有没有语法错误的功能
+		bash -n 脚本名称
+		bash -x 脚本 ：显示执行的语句
+		
+		
 	
 	练习 写一个脚本
 		判断当前系统上是否有用户的默认shell为bash
@@ -915,6 +1009,31 @@ LFS: Linux from Scratch 从0开始构建Linux
 		
 	 exit 退出脚本 
 		exit n : 当n取非0的整数。
+		如果脚本没有明确定义退出状态码，那么，最后执行的一条命令的退出码即为脚本的退出状态码
+		
+		
+	练习 写一个脚本
+		给定一个文件：
+		如果是一个普通文件，就显示之
+		如果是一个目录，亦显示之
+		否则，此为无法识别的文件
+		#!/bin/bash
+		FILE=/etc/passwd
+		if [ ! -e $FILE ];then
+			echo "$FILE is not exist. "
+			exit 1
+		elif [ -d $FILE ]; then
+			echo "$FILE is a directory"
+		elif [ -f $FILE ];then
+			echo "$FILE is a file."
+		else 
+			echo "can not recongrection the $FILE "
+		fi
+	bash变量的类型
+		本地变量(局部变量)
+		环境变量 
+	
+	
 33. 文件测试 
 
 
