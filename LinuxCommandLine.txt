@@ -680,12 +680,25 @@ LFS: Linux from Scratch 从0开始构建Linux
 		或   test命令 test expression
 	
 	整数比较：
-		等值比较：	-eq：equal测试两个整数是否相等； 比如 $A -eq $B  
-		不等值比较：-ne: not equal测试两个整数不等的， 不等为真，等则为假
-		大于比较：  -gt: greater than测试一个数是否大于另一个数，大于为真，小于等于为假
-		小于比较：	-lt: lesser than 测试一个数是否小于另一个数，小于为真，否则为假
+		-eq：等值比较：	 equal测试两个整数是否相等； 比如 $A -eq $B  
+		-ne: 不等值比较：not equal测试两个整数不等的， 不等为真，等则为假
+		-gt: 大于比较：  greater than测试一个数是否大于另一个数，大于为真，小于等于为假
+		-lt:小于比较：	 lesser than 测试一个数是否小于另一个数，小于为真，否则为假
 		-ge 大于或等于
 		-le 小于或等于
+
+	文件测试
+		-e File ：表示文件是否存在
+		-f File ：测试文件是否为普通文件
+		-d File ：测试指定路径是否为目录的
+		-r File ：测试当前用户对指定文件是否有可读权限
+		-w
+		-x
+		
+		[ -e /etc/passwd ]
+		
+		
+		
 		
 		
 	命令间的逻辑关系：短路操作 ，当结果已经出现，以后的就不执行
@@ -811,7 +824,24 @@ LFS: Linux from Scratch 从0开始构建Linux
 			  8     Num=`grep '^$' /etc/profile | wc -l `
 			  9     echo "the space is local at $Num"
 			 10 fi
-        
+        改进：若文件不存在，就没有必要继续执行 
+			  1 #!/bin/bash
+			  2 # 改进，若文件不存在，就没有必要继续执行
+			  3 FILE=/etc/profile
+			  4 if [ ! -e $FILE ]; then
+			  5     echo "No Such the $FILE "
+			  6     exit 1
+			  7 fi
+			  8 
+			  9 if grep "^$" $FILE &> /dev/null;then
+			 10     echo "Total blank lines: `grep "^$" $FILE | wc -l ` ."
+			 11 else
+			 12     echo "No blank lines."
+			 13 fi
+
+		
+		
+		
 	练习 写一个脚本
 		给定一个用户，判断其UID和GID是否一样
 		如果一样，就显示此用户为“good guy”， 否则 就显示此用户为“bad guy”
@@ -834,9 +864,42 @@ LFS: Linux from Scratch 从0开始构建Linux
 		而后判断 用户密码使用期限是否已经小于警告期限； 计算方法，最长使用期限减去已经使用的天数即为剩余使用期限。
 		如果小于，则显示“Warning”;否则 就显示“OK”
 			提示：算术运算的方法 $[$A-$B] 表示变量A的值减去变量B的值的结果。
+			  1 #!/bin/bash
+			  2 # 获得警告期限
+			  3 # 
+			  4 User=sunyinhui
+			  5 W=`grep  "$User:" /etc/shadow |cut -d: -f6 `
+			  6 S=`date +%s`
+			  7 T=`expr $S/86400`
+			  8 L=`grep "$User:" /etc/shadow |cut -d: -f5`
+			  9 N=`grep "$User:" /etc/shadow |cut -d: -f3`
+			 10 SY=$[$L-$[$T-$N]]
+			 11 
+			 12 if [ $SY -lt $W ]; then
+			 13     echo "Warning"
+			 14 else
+			 15     echo "Ok"
+			 16 fi  
+			
+			
+			
+			
+			
 	
 	练习 写一个脚本
 		判定命令历史中历史命令的总条目是否大于1000，如果大于，则显示“Some command will gone”，否则显示“OK”
+		注意 history | wc -l : history 只保留1000命令，所以要在/root/.bash_history中查看。cat /root/.bash_history | wc -l
+			  1 #!/bin/bash
+			  2 # 判断history条目是否大于1000
+			  3 
+			  4 HISTORY=`cat /root/.bash_history | wc -l`  # history | tail -1 | cut -d' ' -f2 也可以取出行号
+			  5 if [ $HISTORY -gt 1000 ]; then
+			  6     echo "Some command will gone"
+			  7 else
+			  8     echo "OK"
+			  9 fi
+		
+		
 
 	在shell中进行加减乘除运算
 		A=3
@@ -850,4 +913,9 @@ LFS: Linux from Scratch 从0开始构建Linux
 		4 expr 算术运算表达式 ；注意表达式中各操作符及运算符之间要有空格，而且要使用命令引用
 			C=`expr $A + $B`
 		
+	 exit 退出脚本 
+		exit n : 当n取非0的整数。
+33. 文件测试 
+
+
 	
