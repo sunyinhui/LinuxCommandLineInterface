@@ -771,7 +771,15 @@ LFS: Linux from Scratch 从0开始构建Linux
 		
 		[ -e /etc/passwd ]
 		
-		
+	字符(串)测试
+		== ：测试相等 一个或两个等于号  A=hello 
+							   B=hi
+							   [ $A = $B ] 或 [ '$A' == '$B' ] 或 [[ '$A' == '$B']]  注意空格
+		!=  :测试不等
+		>  : 测试大于
+		<  ：测试小于
+		-n string :测试指定字符串是否为空，空则真，不空为假
+		-s string :测试指定字符串是否为不空，不空为真，空则为假
 		
 		
 		
@@ -1034,7 +1042,211 @@ LFS: Linux from Scratch 从0开始构建Linux
 		环境变量 
 	
 	
-33. 文件测试 
+33. sed 流编辑器  awk 
+	sed stream EDitor 纯ASCII文本的
+		行编辑器 把一行读到内存中，在内存空间与给定的模式匹配，若匹配，也叫作sed的模式空间，在模式空间上进行操作。 而后将模式空间中的内容显示出来。
+		默认情况下，不编辑原文件，仅对模式空间上的数据做处理
+		
+	sed [options]'AddressCommand' file,...  :Address 指定对那些行做出处理，Command命令做出操作。在Address 和 Command 之间不需要添加空白字符。
+			options:
+						-n :静默模式 即为 不显示模式空间上的内容
+						-i :直接在原文件中修改 注意系统文件的修改  最好先做备份
+						-e Script -e Script ...: 支持同时执行多个脚本。 脚本的含义就是'AddressCommand'
+						-f File: 读取文件，执行文件中的命令
+									sed -f /path/to/script file  注意可以把 -e后的S多个Script写在一个脚本中
+						-r :表示使用扩展的正则表达式
+						
+		Address：
+				1、StartLine,EndLine :起始行，结束行 比如 1,100   
+				   $:最后一行
+				   $-1:倒数第二行   
+				2、/RegExg/ 正则表达式 例如 /^root/ 就是找文件中以root开头的行  
+					注意 要用双斜线引起来
+				3、/Pattern1/,/Pattern2/ 表示从第一次被模式1匹配的行开始，到第一次被模式2匹配的行结束
+				4、LineNumber 精确到某行
+				5、StartLine,+N ：从StartLine开始，向后的N行
+		Command：单引号，双引号都可以
+				d: delete 删除符合条件的行。 sed "3,$d" /etc/fstab    
+											 sed "/root/d" /etc/fstab
+											 sed "1,+2d" /etc/fstab
+					删除以/开头的行 需要转义
+											 sed "/^\//d" /etc/fstab  
+				p: print 显示符合条件的行
+											 sed "/^\/p/" /etc/fstab  显示以/开头的行  注意会显示两次
+											 sed -n '/^\//p' /etc/fstab 静默模式显示匹配到的行
+				a: add 在匹配到的行后面新增一行  \string 在指定的行后面追加新行，内容为string
+											 sed '/^\//a \#hello world' /etc/fstab   在匹配的模式下添加一行
+											 sed '/^\//a \#hello world\n# hello linux' /etc/fstab 在匹配的模式下添加两行
+																	  \n ：实现换行
+				i: insert 在指定的行前面添加新行  \string 内容是string
+											sed "/^#/i \hello world" /etc/fstab
+				r File :将指定的文件添加到匹配到的行后面 
+											sed '1,2r /etc/issue' /etc/fstab  在第一行和第二行后面添加/etc/issue 文件中的内容
+				w File ：将指定范围内的内容所在的行另存至指定的文件中。
+											sed '/root/w /tmp/root.txt' /etc/fstab 
+												将文件中/etc/fstab包含root的行写入到/tmp/root.txt文文件中
+				s/pattern/string/ :查找并替换 将匹配到的模式pattern替换为指定的string	注意 有三个斜线 ，不仅限于斜线，还可以使用#和@
+									默认只替换每行中第一次被匹配到的模式
+										s/pattern/string/修饰符
+										修饰符 g: 全局替换
+											   i: 忽略字符大小写
+											   
+													   
+									sed 's/root/ROOT/' /etc/fstab 
+									sed 's/^\//#/' /etc/fstab
+									sed 's/\//#/' /etc/fstab  没有全局替换
+									sed 's/\//#/g' /etc/fstab
+							
+								s### 不需要转义 注意 pattern和string中不要出现#号 ,如遇#号使用@ sed  's@/@#@g' /etc/fstab
+								s@@@ 不需要转义  同上 
+					向后引用 
+							test.txt  
+									i  like her 
+									she is my love
+						    查找l..e 然后替换成l..er
+									sed 's#\(l..e\)#\1r#g' test.txt
+					&: 引用模式匹配整个串 
+									sed 's#l..e#&r#g' test.txt
 
+									root@slave1:~# grep '\(l..e\).*\1r' test.txt
+									He love his lover
+									root@slave1:~# sed  's#\(l..e\)#\1r#g' test.txt      
+									He lover his loverr
+									She liker her loverr
 
+									root@slave1:~# sed 's#l..e#&r#g' test
+									testif2.sh  testif.sh   test.txt    
+									root@slave1:~# sed 's#l..e#&r#g' test.txt 
+									He lover his loverr
+									She liker her loverr
+									
+									
+						把live->Live love->Love
+									sed 's#l\(..e\)#L\1#g' test.txt
+ 									
+							root@slave1:~# sed 's#l\(..e\)#L\1#g' test.txt
+							He Love his Lover
+							She Like her Lover
+			
+				把 命令history显示的行首空格去掉 
+							history | sed 's#^[[:space:]]*##g' :可以删除行首的任意空白字符
+							history | sed 's#^[[:space:]]*##g' | cut -d' ' -f1
+	sed练习 
+		1. 删除/etc/grub.conf 文件中行首的空白符
+			sed -r 's@^[[[:space:]]+@@g' /etc/grub.conf
+		2. 替换/etc/inittab文件中'id:3:initdefault:'一行中的数字为5
+			sed 's@\(id:\)[0-9]\(:initdefault\)@\15\2@g' /etc/inittab
+		3. 删除/etc/inittab文件中的空白行
+			sed '/^$/d' /etc/inittab
+		4. 删除/etc/inittab文件中开头的#号
+			sed 's@^#@@g' /etc/inittab
+		5. 删除某文件中开头的#号，及后面的空白字符，但要求#号后面必须有空白字符
+			sed -r 's@^#[[:space:]]+@@g' /etc/inittab
+		6. 删除某文件中以空白字符后面跟#号开头的行中，开头的空白字符及#
+			sed  -r 's@^[[:space:]]+#@@g' /etc/inittab
+		7. 取出一个文件路径的目录名称
+			echo '/etc/rc.d' | sed -r 's@^(/.*/)[^/]+?@\1@g' 
+			其中 rc.d叫作基名
+			echo '/etc/rc.d' | sed -r 's@^/.*/([^/]+?)@\1@g' 
+		
+	练习 
 	
+		0 写一个脚本 
+		  传递一个参数给脚本，如果参数为q Q quit Quit，就退出脚本，否则，就显示用户的参数
+				  1 #!/bin/bash
+				  2 if [ $1 == '[q Q quit Quit]' ]; then
+				  3     exit
+				  4 else
+				  5     echo $1
+				  6 fi
+		  
+		  
+		  
+	    1 传递一个用户名参数给脚本，判断此用户的用户名跟基本组的组名是否一致，并将结果显示出来
+		字符串比较 
+				  1 #!/bin/bash
+				  2 # 测试用户
+				  3 if ! id $1 &> /dev/null; then
+				  4     echo "No Such user."
+				  5     exit 10
+				  6 fi  
+				  7 
+				  8 if [ `id -n -u $1` == `id -n -g $1` ]; then
+				  9     echo 'conform'
+				 10 else
+				 11     echo 'not conform'
+				 12 fi
+						
+						
+		
+		
+		2 传递三个参数给脚本，第一个为整数，第二个为算术运算符，第三个为整数，将计算结果显示出来，要求保留两位整数，行如： ./calc.sh 5 / 2 
+			提示：将参数传递给bc  scale=2 保留两个小数
+		    	echo 'scale=2;111/22;' | bc
+			或
+				bc <<< "scale=2;111/22;"
+			
+		
+		3 传递3个参数给脚本，参数为用户名，将这些用户的账号信息提取出来后放置于/tmp/testusers.txt文件中，并要求每一行行首有行号。
+		
+		
+		4 写一个脚本 判断当前主机的cpu生产商，其信息在/proc/cpuinfo 文件中vendor id 一行中
+	      如果其生产商为AuthenticAMD，就显示其为AMD公司
+		  如果其生产商为AuthenticIntel，就显示其为Intel公司， 否则就显示为非主流公司
+		
+		5  写一个脚本，给脚本传递三个整数，判断其中的最大数和最小数，并显示出来
+			
+	循环 :进入循环、退出循环 
+		1 for 
+		2 while
+		3 until
+		
+		for 变量 in 列表; do     或    for  变量 in 列表; 
+			循环体                     do  
+		done                                循环体
+									   done 
+		
+		如何生成列表：
+				{1..100}  两个点
+				seq 起始数， 步进长度， 结束数
+		
+		声明一个变量 
+			declare -i SUM=0
+					-i integer 整数
+					-x export 将变量声明为环境变量
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
