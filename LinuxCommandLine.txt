@@ -779,7 +779,7 @@ LFS: Linux from Scratch 从0开始构建Linux
 		>  : 测试大于
 		<  ：测试小于
 		-n string :测试指定字符串是否为空，空则真，不空为假
-		-s string :测试指定字符串是否为不空，不空为真，空则为假
+		-z string :测试指定字符串是否为不空，不空为真，空则为假
 		
 		
 		
@@ -1093,7 +1093,8 @@ LFS: Linux from Scratch 从0开始构建Linux
 											   
 													   
 									sed 's/root/ROOT/' /etc/fstab 
-									sed 's/^\//#/' /etc/fstab
+									
+									's/^\//#/' /etc/fstab
 									sed 's/\//#/' /etc/fstab  没有全局替换
 									sed 's/\//#/g' /etc/fstab
 							
@@ -1200,6 +1201,8 @@ LFS: Linux from Scratch 从0开始构建Linux
 		1 for 
 		2 while
 		3 until
+		
+		for循环通过遍历列表来循环的
 		
 		for 变量 in 列表; do     或    for  变量 in 列表; 
 			循环体                     do  
@@ -1381,21 +1384,204 @@ LFS: Linux from Scratch 从0开始构建Linux
 	十五 替换 s
 		在末行模式下使用s命令，用法同sed 
 		:s/if/IF/g
+		1,$:从第一行到最后一行
+		%  :同上 表示全文
 		
-	
+		练习 ： 将/etc/yum.repos.d/server.repo文件中的ftp://instructor.example.com/pub替换为http://172.16.0.1/yum
+					vim /etc/yum.repos.d/server.repo
+					:%s#ftp://instructor.example.com/pub#http://172.16.0.1/yum#g
 			
+	十六  使用VIM编辑多个文件
+		vim file1 file2 :打开多个文件，默认只显示第一个文件。
+			在末行模式下
+				:next  切换到下一个文件
+				:prev  切换到上一个文件
+				:last  切换到最后一个文件
+				:first 切换到第一个文件
+			:q 		退出当前文件
+			:qall 	退出所有文件
+			:qa     同上
+		 
+	十七  分屏显示一个文件 窗口拆分
+			水平拆分窗口
+						ctrl + w, s ：			水平拆分窗口
+						ctrl + w, 向下箭头 ：   切换到下一个拆分窗口
+						ctrl + w, w ：        	同上
+			垂直拆分窗口
+						ctrl + w, v： 			垂直拆分窗口
+						
+			注：在窗口间切换 
+						ctrl + w, 上下左右箭头
+			:q  	只能退出当前窗口
+			:qa 	退出所有窗口
+			:qll 	同上
 			
+	十八  分窗口显示多个文件  (方便在文件中进行数据交换)
+			vim -o file1 file2 
+				-o  水平显示
+				-O  垂直显示
+			切换窗口同上
+			
+	十九  将当前的部分内容另存为另外文件
+			:w /path/to/file			将全部内容保存至file 
+			:addr1,addr2w /path/to/file 将指定行保存至file
+			
+	二十  将另外一个文件的内容填充在当前文件中
+		    :r  /path/to/file
 	
-				
+	二十一 跟shell交互
+			:! Command    直接输入命令运行
+						  回车后，进入vim编辑器
+	
+	二十二 高级话题
+			1	显示或取消行号
+				:set number  显示行号 
+				:set nu		 显示行号
+				:set nonu	 取消行号
+			2	忽略大小写
+				:set ignorecase  忽略大小写
+				:set ic			 同上
+				:set noignorecase 不忽略大小写
+				:set noic         同上
+			3	设定自动缩进
+				:set autoindent
+				:set ai
+				:set noai      取消
+			4	查找到的文本设置高亮显示或取消高亮显示
+				:set hlsearch	  高亮显示 high light
+				:set nohlsearch   取消高亮显示
+			5	语法高亮显示(语法着手)
+				:syntax on  打开语法高亮显示
+				:syntax off 关闭语法高亮显示
+		以上只对当前shell有效，若要永久有效修改配置文件
+		
+	二十三 	配置文件			
+				1	全局所有用户
+							/etc/vimrc
+				2	当前用户
+							~/.vimrc   隐藏文件
+		查看vim帮助
+				vimtutor
 		
 		
+	练习写脚本
+		1.	添加10个用户user1到user10，密码同用户名，但要求当用户不存在时才添加
+				  1 #!/bin/bash
+				  2 #添加10个用户
+				  3 #
+				  4 for I in {1..10}; do
+				  5     if id user$I &> /dev/null ; then
+				  6         echo "user$I exists."
+				  7     else
+				  8         useradd user$I
+				  9         echo "user$T" | passwd --stdin user$I &> /dev/null
+				 10         echo "add user$I sucess"
+				 11     fi
+				 12 done
+			
+			删除：
+				  1 #!/bin/bash
+				  2 # 删除10个用户
+				  3 # 
+				  4 
+				  5 for I in {1..10} ; do
+				  6     if id user$I &> /dev/null ;then
+				  7         userdel -r user$I
+							echo "delete user$I finished"
+				  
+				  8     else
+				  9         echo "user$I not exists."
+				 10     fi
+				 11 done				
+							
+		扩展： 接收一个参数
+							--add：添加10个用户
+							--del：删除10个用户
+										  1 #!/bin/bash
+										  2 # 接收一个参数
+										  3 # add 添加
+										  4 # del 删除
+										  5 echo $1
+											if [ $# -lt 1]; then
+												echo "Usage: with arg"
+												exit 7
+											fi
+										  6 if [ $1 == '--del' ]; then
+										  7     for I in {1..10} ;do
+										  8         if id user$I &> /dev/null ;then
+										  9             userdel -r user$I
+										 10             echo "delete user$I finised."
+										 11         else
+										 12             echo "user$I not exists."
+										 13         fi  
+										 14     done
+										 15 elif [ $1 == '--add' ] ;then
+										 16     for I in {1..10} ;do
+										 17         if id user$I &> /dev/null ;then
+										 18             echo "user$I exists." 
+										 19         else
+										 20             useradd user$I
+										 21             echo "user$I" | passwd --stdin user$I &> /dev/null
+										 22             echo "Add user$I sucess."
+										 23         fi  
+										 24     done
+										 25 else
+										 26     echo "the arg is not del or add"
+										 27     exit 8
+										 28 fi 						
+		扩展：接收多个参数 只操作列表中指定的用户 注意是逗号隔开，当是空格隔开时，可以使用$1...$n来获取参数。
+																  当是逗号时，当做一个字符串，然后使用sed 把逗号分割转换成列表
+						--add user1,hello, user2,world 
+						--del user1,hello, user2,world
+
+									  1 #!/bin/bash
+									  2 # 使用逗号分隔时
+									  3 # --add hive,hello,world
+									  4 # --del hive,hello,world
+									  5 # 
+									  6 #
+									  7 echo $1
+									  8 # 使用sed 把 $1 转换成列表
+									  9 echo $1 | sed 's/,/ /g'
+									 10 
+									 11 if [ $1 == '--add' ];then
+									 12   for I in `echo "$2" | sed 's#,# #g'`;do
+									 13       if id $I &> /dev/null ;then
+									 14           echo "$I is exists."
+									 15       else
+									 16           useradd $I
+									 17           echo "$I" | passwd --stdin $I &> /dev/null
+									 18           echo "add $I sucess."
+									 19       fi
+									 20   done
+									 21 elif [ $1 == '--del' ];then
+									 22     for I in `echo "$2" | sed 's#,# #g'`;do
+									 23         if id $I &> /dev/null;then
+									 24             userdel $I
+									 25             echo "delete $I finised."
+									 26         else
+									 27             echo "$I is not exists.so can not del"
+									 28         fi
+									 29     done
+										elif [ $1 == '--help' ]; then 
+											echo "Usage: bash file.sh --add arg0,arg1,arg2 | --del arg0,arg1,arg2 | --help arg0,arg1,arg2"
+									 30 else										# 还可以添加--help 选项 elif [ $1 == '--help' ]
+									 31     echo "$1 may not be --add or --del"
+									 32     exit 10
+									 33 fi
+										
+35  组合测试条件, 同时可以测试多个条件
+		整数测试
+		文件测试
+		字符串测试
+		-a : 与
+		-o ：或
+		!  : 非
 		
-		
-		
-		
-		
-		
-		
+		例如 ：
+			if [ $# -gt 1 -a $# -le 3 ] ; then 
+		或 
+			if [ $# -gt 1 ] &&　[ $# -le 3 ] ; then
 		
 		
 		
