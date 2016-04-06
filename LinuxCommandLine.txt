@@ -1731,11 +1731,46 @@ LFS: Linux from Scratch 从0开始构建Linux
 			xargs 本身可以不使用占位符{}
 			find /etc -size +1M | xargs echo  >> /tmp/etc.largefiles  
 			
-37 			
+37 	特殊权限   ：  http://www.cnblogs.com/fhefh/archive/2011/09/20/2182155.html
+			SUID	: set user ID    运行某程序时，相应进程的属主是程序文件自身的属主，而不是启动者. 
+									 注意不到万不得已，不要赋予SUID权限
+					chmod u+s  file ：改变文件的SUID 
+					chmod u-s  file   
+						如果 file 本身具有执行权限，则SUID显示为s，否则显示为S;						
+					ls -l /usr/bin/passwd 
+							可以看出 本身就具有SUID权限，用户本身要修改自己的密码，并保存到文件中。所以要有执行权限，就必须要以管理员的身份运行
+						
+			SGID	：set group ID   运行某程序时，相应进程的属组是程序文件自身的属组，而不是启动者所属的基本组
+					chmod g+s dir/file 
+					chmod g-s dir/file  
+					场景 ：公司内部开发小组，有很多用户，hadoop hbase ,hive.每个用户都可以在/project目录下都能创建文件，而且是hadoop创建的文件，
+							hive可以读写，反之亦然。
+							chmod g+s /tmp/project
+					SGID 的作用是 在目录下创建的文件，不再是用户自己的基本组，而是这个目录的属组
+						  hadoop 可以删除hbase创建的文件？？  可以 
+						 可不可设置 别人创建的文件，其他用户没有权限删除
+
+			Sticky	：在一个公共目录下，每一人都可以创建文件，删除自己的文件，但不能删除别人的文件
+					chmod o+t dir  : 对目录而言
+					chmod o-t dir  ：对目录而言
 			
+			这三个位组合起来，组成一个  按照SUID,SGID,Sticky
+										000
+										001
+										010
+										011
+										100
+										101
+										110
+										111
+								
+					chmod 1755 /path/to/file 
+					      打头的数字表示特殊权限
 			
-			
-			
+					umask 表示为 0022  :第一位表示特殊权限
+					
+
+		
 			
 			
 			
