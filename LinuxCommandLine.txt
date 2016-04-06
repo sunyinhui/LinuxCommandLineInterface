@@ -393,7 +393,7 @@ LFS: Linux from Scratch 从0开始构建Linux
 		管理员的默认创建文件权限是644	文件夹是755
 		普通管理员创建文件权限是664	文件夹是775
 		
-		umask: 遮罩码 root的遮罩码是0022 普通用户的遮罩码是0002  
+		umask: 遮罩码 root的遮罩码是0022 普通用户的遮罩码是0002  第一0表示特殊权限，参考37
 		设定umask码 umask 022 修改之后只会在当前有效 退出后失效 在.bashrc中加上一行umask 022即可
 		创建文件的权限是666-umask码 注意文件默认没有执行权限，如果算的结果中有执行权限时会自动加1  umask 023 试试 666-023=643 但是实际上是644
 		创建目录的权限是777-umask码
@@ -1770,10 +1770,55 @@ LFS: Linux from Scratch 从0开始构建Linux
 					umask 表示为 0022  :第一位表示特殊权限
 					
 
+38	文件系统访问控制列表 FACL ：Filesystem Access Control List 
+		tom 
+		jerry
 		
+		Tom创建一个文件，希望Jerry也可以读写这个文件,只能修改other组具有rw-权限，但是除Jerry外还有其他用户有rw-权限，引入了安全问题
+						  而且普通用户是没有chown权限的
+							
+	文件系统访问列表 FACL ：Filesystem Access Control List 	
+						利用文件的隐藏或扩展属性，保存额外的访问控制权限，可以专门定义哪个用户，或者哪个组对此文件具有什么样的权限。
+						也可以对目录设定额外的控制选项，此目录下的所有文件都默认继承目录上的控制访问列表.
+			setfacl :设置facl ，可以设置到用户上， 也可以设定到组上
+					-m 	  设定额外的控制选项
+							u:UID:权限
+							g:GID:权限		
+					    setfacl -m u:hadoop:rw file 
+						setfacl -m g:mygroup:rw file 
+						
+						对目录而言
+						setfacl -m d:u:hadoop:rw dir 
+						
+					-x	  取消设定额外的控制选项
+						setfacl -x u:hadoop file
+						setfacl -x g:hadoop file
+			ls -l  file 时，会发现 会多一个加号, 加号表示扩展属性。当使用复制等操作时，默认是会丢失的。
+								-rw-rwxr--+ 1 root root ....
 			
-			
-			
+							Owner->Group->Other
+有了facl 之后权限应用次序	Owner->facl(user)->Group->facl(group)->Other
+				     
+				
+			getfacl :获得facl 	
+					getfacl file 会列出以下信息
+						#file:filename
+						# owner:root
+						# group:root
+						user:rw-
+						user:hadoop:rw-
+						group::r--
+						group:mygroup:rw-
+						mask::rw-
+						other::r--
+			存疑	其中mask::rw- 的含义是设定额外的权限不能超过mask所设定的权限。若超出，会裁剪  
+							
+						
+39  几个命令
+			whoami	: print effective userid
+			who		: show who is logged on 
+			who -H  
+
 			
 			
 			
