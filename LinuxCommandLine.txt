@@ -89,7 +89,7 @@
 		-m ：修改时间
 		-c ：改变时间
 		-t ：修改时间戳 
-	stat :查看文件属性
+	stat :查看文件属性  status ：状态
 17.复制
 	cp
 	    -r:递归复制
@@ -1583,22 +1583,280 @@ LFS: Linux from Scratch 从0开始构建Linux
 		或 
 			if [ $# -gt 1 ] &&　[ $# -le 3 ] ; then
 		
+	练习 写脚本
+	
+		+=
+		-=
+		*=
+		/+
+		%=
+		i++
+		i--
+		++i
+		--I
 		
+			1.分别计算100以内的所有奇数和，偶数和，并分别显示之
+				注 let SUM+=$I
+				
+  1 #!/bin/bash
+  2 declare -i SUM=0
+  3 
+  4 for I in {1..100};do
+  5     SUM=$[$SUM+$I]
+  6 done
+  7 
+  8 echo $SUM			
 		
+36 	文件查找  locate  find 
+		grep egrep fgrep 是文本查找，是文件中查找字符串的
 		
+	locate ： 非实时，非精确查找，根据全系统文件数据库进行的，唯一的优势是速度快
+				locate passwd  
+			  系统每天会对文件系统进行检索，加入数据库中，若今天新建的文件，查找时，可能查找不到。而且locate 是模糊查找。
+			updatedb : 手动生成文件数据库
+	find : 实时，精确，遍历指定目录中的所有文件完成查找，速度慢。
+			优势是众多查找标准，支持文件权限，支持正则表达式查找
+			
+		find + 查找路径 + 查找标准 + 查找到以后的处理动作
+				查找路径省略就默认代表当前目录
+				查找标准省略就默认指定路径下的所有文件
+				处理动作默认为显示到屏幕上
+		查找标准：根据选项来确定
+				-name  filename :根据文件名精确查找
+					   文件名通配：
+								*：任意长度任意字符
+								?:
+				-iname filename ：文件名匹配不区分大小写
+				
+				-regex pattern  :根据模式进行文件名查找
+				
+				-user username  :根据文件的属主来查找
+								find /home  -user  sunyinhui
+								
+				-group groupname :根据文件属组来查找				
+				
+				-uid UID ：根据UID查找
+				-gid GID ：根据GID查找
+				-nouser  : 查找没有属主的文件  要经常将没有属主的用户，赋给管理员，免得其他用户乘虚而入
+				-nogroup : 查找没有属组的文件
+				
+				-type + 以下参数： 根据类型来查找
+							f : 普通文件
+							d : 目录
+							c ：字符
+							b : 块设备
+							l : 链接文件
+							p : 管道设备
+							s : 套接字设备
+					
+				-size + 参数  ：根据指定类型来查找  默认是字节
+						  [+|-]nk 
+						  [+|-]nM
+						  [+|-]nG
+						  +2k :大于2k
+						  -2k :小于2k
+						  2k  ：2k
+						  find / -size +20M -ls  ： -ls 显示文件的详细信息
+		组合条件： 没有指明时，默认是and 
+			-a	:	and 
+			-o	:	or
+			-not:   not 
+			
+				find / -size +20M -a -type f 
+				find / -not -type d  -a -not -user sunyinhui  或  find / -not \(-type d -o -user sunyinhui\)
+				
+			
+		根据时间戳来查找文件
+			-mtime + [+|-]天数 : 最后一次的修改时间
+			-ctime 				: 最后一次的改变时间
+			-atime 				: 最后一次的访问时间
 		
+			-mmin  [+|-]分钟数
+			-cmin
+			-amin 
+						find ./ -amin +5
+						find ./ -atime +10
 		
+		根据权限来查找
+			-perm mode  :permission 
+					mode : 755 744 775
+					
+			-perm -mode  :   每一位权限都必须精确匹配  文件权限能完全包含此mode时才能显示
+							find ./ -perm 644
+							644 rw-r--r--
+							755 rwxr-xr-x 
+							750 rwxr-x---
+							文件权限是755的，也能显示出来.
+									  750    不能显示出来
+							find ./ -perm 001 
+							find ./ -perm 022  
+			-perm /mode  :   有一位匹配就显示
+							find ./ -perm /644
+			
+	find 找到文件后的执行动作
+		-print : 显示 默认动作
+		-ls    : 类似ls -l的形式显示每一个文件的详细信息
+		-ok  command {} \;   : 以反斜线分号结束    {} 的作用是存放find找到的文件，作为参数传给command    ：每一个操作都需要用户确认
+		-exec command {} \;  : 同上   {}  只要引用找到的文件就使用{} 
 		
+						例如 ：找到其他用户具有写权限的文件，修改其写权限，使其失去写权限
+								find ./ -perm -006 -exec chmod o-w {} \;  
+							   找到属组属主都能执行权限的目录
+							    find ./ -type d -ok chmod +x {} \;
+								 
+			注 -ok ：你的每一个操作都需要用户确认
+						    找到属组有写权限的文件，并把文件命名为原来名字+.new  
+							find ./ -perm -020 -exec mv {}  {}.new \;
+							
+							找到以.sh结尾的文件，并把其他用户拥有执行权限给去掉 
+							find ./ -name "*.sh" -a -perm -111 -exex chmod o-x {} \;
+		练习 
+			1.	查找/var目录下属主为root 并且属组为mail的所有文件
+					find /var -user root -a -group mail	
+			2.	查找/usr目录下不属于root，bin student的文件
+					find /usr -not -user root -a -not -user bin -a -user student 
+			3.	查找/etc目录下最近一周内内容修改过且不属于root及student用户的文件
+					find /etc -mtime -7 -a -not \(-user root -o -user student \) 
+			4.	查找当前系统上没有属组或属主且最近一天没有被访问过的文件，并将其属主属组均修改为root 
+					find  /  \(-nouser -o -nogroup\) -a -atime -1 -exec chmod root:root {} \;
+			5.	查找/etc目录下大于1M的文件，并将其文件名写入/tmp/etc.largefiles文件中
+					find /etc -size +1M -exec echo {} >> /tmp/etc/largefiles
+			6.	查找/etc 目录下所有用户都没有写权限的文件，显示其详细信息
+					find /etc -not -perm /222 -ls
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+	除了结合-ok -exec 之外，还可以跟 xargs 命令结合
+			man xargs  : xargs - build and execute command lines from standard input
+			
+			find /etc -size +1M | xargs echo {} >> /tmp/etc.largefiles  
+			xargs 本身可以不使用占位符{}
+			find /etc -size +1M | xargs echo  >> /tmp/etc.largefiles  
+			
+37 			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
 		
 		
 		
