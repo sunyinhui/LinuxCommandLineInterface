@@ -1987,10 +1987,19 @@ LFS: Linux from Scratch 从0开始构建Linux
 						 27 
 						 28 if [ $showusers -eq 1 ]; then
 						 29     echo "they are:"
-						 30     who
+						 30     who 
 						 31 fi		
+
+41  磁盘管理
+		MBR ：Master Boot Record  主引导记录 第0盘面第0磁道第0扇区 (512byte)
+				有分为3段
+						1.BoootLoader(446byte) : 引导加载器
+						2.接着64byte中每16个字节标示一个分区，可供标示4个分区
+						3.剩下2byte成为是魔数MagicNumber, 用来标记MBR是否是有效的 
 		
-			
+		文件系统 ：metadata 元数据
+				 ：
+		
 			
 			
 			
