@@ -1997,14 +1997,74 @@ LFS: Linux from Scratch 从0开始构建Linux
 						2.接着64byte中每16个字节标示一个分区，可供标示4个分区
 						3.剩下2byte成为是魔数MagicNumber, 用来标记MBR是否是有效的 
 		
-		文件系统 ：metadata 元数据
+		文件系统 ：metadata 元数据 
 				 ：
+		链接文件 ：777 
 		
+		硬链接 和 软链接
+		
+		
+		硬链接：
+			1.只能对文件建立硬链接，不能应用于目录
+			2.不能跨文件系统
+			3.创建硬链接会增加文件被链接的次数
+		
+		符号链接：
+			1.可应用于目录
+			2.可以跨文件系统
+			3.不会增加被链接文件的被链接次数
+			4.其大小为指定的路径所包含的字符个数
+		
+		
+		ln [-s -v] SRC DEST 
+			ln 不带参数 建立硬链接
+			-s : 软链接
+			-v :显示创建过程 
+		
+		du : 估计文件/目录大小 disk usage : estimate file space usage
+			du + dir : 显示目录及其子目录的大小
+			du -s dir ：只显示目录的大小
+			du -h ：以人的角度查看文件大小，也就是换算成k , M , G
+			
+		df : 报告磁盘使用情况，默认是以多少块来显示
+			-h 
+			-i 显示有多少个inode
+			
+		
+
+	设备文件 ：是没有大小的, 设备文件是设备的访问入口
+		b :按块为单位，随机访问的设备
+		c :按字符为单位，线性设备
+			
+		
+		/dev :
+				主设备号（major number）
+					标示设备类型
+				次设备号 (minor number)
+					标示同一种类型中不同设备
 			
 			
-			
-			
-			
+		mknod :创建设备文件 make block or character special files
+				 mknod [OPTION]... NAME TYPE [MAJOR MINOR]
+						-m, --mode=MODE
+							  set file permission bits to MODE, not a=rw - umask
+
+						-Z, --context=CTX
+							  set the SELinux security context of NAME to CTX						
+				mknod  mydev c 66 0
+				mknod  -m 640 mydev2 c 66 1 
+		
+		系统如何标示硬盘的？？？
+		
+		硬盘设备的设备文件名：
+				IDE,ATA ： hd 开头
+				SATA ：    sd 开头
+				SCSI :     sd ...
+				USB  ：    sd ...
+						a,b,c ... 来区别同一种类型下的不同设备
+			/dev/hda
+			/dev/hdb
+			....
 			
 			
 			
