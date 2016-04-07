@@ -1818,13 +1818,178 @@ LFS: Linux from Scratch 从0开始构建Linux
 			whoami	: print effective userid
 			who		: show who is logged on 
 			who -H  
+			w       比who更详细：show who is logged on and what they are doing  
+			last    ：用于显示/var/log/wtmp文件 显示登录历史及系统重启历史
+					  -n : 只显示最近n次的登录信息。
+			lastb   :用于显示/var/log/btmp文件，显示用户错误的登录尝试 
+			lastlog : 显示每一个用户最近一次的成功登录信息
+					-u username  指定特定用户
+			basename /path/to/filename : 取得路径的基名，也就是获得filename
+					basename $0  : 执行脚本时的脚本名称, 只获得脚本的基名
+								
+					  1 #!/bin/bash
+					  2 echo "hello `basename $0` "
+					输出 hello basename.sh
+			mail    : 邮件	
+					-s  :指定主题
+						cat /etc/fstab | mail -s 'How are you ?'  root  : 给root用户发送/etc/fstab中的内容，主题设置为How are you 
+					或  mail -s "How are you ?"  root  <  /etc/fstab   
+			hostname : 主机名
+			RANDOM  : 生成随机数
+					 0-32768
+					 随机数生成数 熵池
+								  /dev/random
+								  /dev/urandom
+								
+			        练习 生成10个随机数，取得最小值和最大值
+							  1 #!/bin/bash
+							  2 # 生成10个随机数
+							  3 #当取得最小值时，要把第一次的随机数赋给MIN
+							  4 declare -i MAX=0
+							  5 declare -i MIN=0
+							  6 for I in {1..10};do
+							  7    R=`echo $RANDOM`
+							  8    [ $I -eq 1 ] && MIN=$R
+							  9    echo -n $R,
+							 10     if [ $R -gt $MAX ];then
+							 11         MAX=$R
+							 12     fi
+							 13     if [ $R -lt $MIN ]; then
+							 14         MIN=$R
+							 15     fi
+							 16 done
+							 17 echo ""
+							 18 echo "the Max is $MAX"
+							 19 echo "the Min is $MIN"
+						   
+			
+		练习 写一个脚本
+			每隔5秒钟，就来查看hadoop是否已经登录，如登录，显示其已经登录，并退出
+			sleep 3 :睡眠3秒
+			
+40  case ：选择语句
+			case SWITCH in 
+					value1)
+						statement
+						...
+						;;		# 必须以双分号结尾
+					value2)
+						statement
+						...
+						;;
+					value3)
+						statement
+						...
+						;;
+					*）
+						statement
+						...
+						;;
+			esac     #  以esac结束 
+			
+			其中 value 可取 a-z
+							A-Z
+							0-9
+						    [a-zA-Z]
+				
+			只接受 start stop  restart status  之一
+			  
+	写一个脚本，可以接受选项及参数，而后能获取每一个选项， 及选项的参数，并能根据选项及参数做出待定的操作。比如：
+				adminusers.sh --add tom,jerry  --del tom,blair -v|--verbose -h|help   
+					其中 -v 显示详细信息	
 
-			
-			
-			
-			
-			
-			
+								  1 #!/bin/bash
+								  2 # 添加用户
+								  3 # 当参数 为 -v 或 --verbose 时，才显示交互信息。否则不显示交互信息， 哲学 没有消息就是好消息
+								  4 DEBUG=0
+								  5 ADD=0
+								  6 DEL=0
+								  7 # 判定用户选定了哪些选项
+								  8 for I in `seq 0 $#`; do
+								  9     if [ $# -gt 0 ];then
+								 10         case $1 in
+								 11                  '-v'|'--verbose')
+								 12                                 DEBUG=1
+								 13                                 shift
+								 14                                  ;;     
+								 15                  '-h'|'--help')
+								 16                         echo "Usage:`basename $0` --add user | --del user "
+								 17                         exit 0;; # 只要有help选项，就退出
+								 18                  '--add')
+								 19                         ADD=1
+								 20                         ADDUSER=$2
+								 21                         shift 2;;
+								 22                 '--del')
+								 23                         DEL=1
+								 24                         DELUSER=$2
+								 25                         shift 2;;
+								 26                 *)
+								 27                         echo "Usage:`basename $0` --add user | --del user "
+								 28                         exit 7
+								 29          esac    
+								 30                 
+								 31     fi  
+								 32 done    
+								 33 # 根据选项执行相应的操作            
+								 34 if [ $ADD -eq 1 ]; then 
+								 35     for USER in `echo $ADDUSER | sed 's@,@ @g' ` ; do
+								 36         if id $USER &> /dev/null ;then
+								 37           [ $DEBUG -eq 1 ] && echo "$USER is exists." # 当debug为1时才显示，否则避免与用户交互
+								 38         else
+								 39             useradd $USER
+								 40             echo "$USER" | passwd --stdin $I &> /dev/null
+								 41             [ $DEBUG -eq 1 ] && echo "add $USER finised."
+								 42         fi
+								 43     done
+								 44 fi
+								 45 
+								 46 if [ $DEL -eq 1 ]; then 
+								 47     for USER in `echo $DELUSER | sed 's#,# #g'`; do
+								 48         if id $USER &> /dev/null ;then
+								 49             userdel $USER
+								 50            [ $DEBUG -eq 1 ] && echo "delete $USER finised."
+								 51         else 
+								 52            [ $DEBUG -eq 1 ] &&  echo "$USER is not exists.so can not del."
+								 53         fi
+								 54     done
+								 55 fi
+				
+	写一个脚本shodwlogged.sh ,其用法格式如下:
+		showlogged.sh -v -c -h|--help
+		其中，-h选项只能单独使用，用于显示帮助信息；
+			  -c选项，显示当前系统上登录的所有用户数，如果同时使用了-v选项，则既同时显示登录的用户数，又显示登录用户的相关信息
+						  1#!/bin/bash
+						  2 declare -i shownum=0
+						  3 declare -i showusers=0
+						  4 
+						  5 for I in `seq 1 $#` ; do
+						  6     if [ $# -gt 0 ];then
+						  7         case $1 in
+						  8             '-h'|'--help')
+						  9                 echo "Usage:`basename $0` -h|--help -c|--count -v|--verbose"
+						 10                 exit 0;;
+						 11             '-c'|'--count')
+						 12                 let shownum=1
+						 13                 shift;;
+						 14             '-v'|'--verbose')
+						 15                 let showusers=1
+						 16                 shift;;
+						 17             *)
+						 18                 echo "Usage:`basename $0` -h|--help -c|--count -v|--verbose"
+						 19                 exit 8
+						 20         esac
+						 21     fi
+						 22 done
+						 23 
+						 24 if [ $shownum -eq 1 ];then
+						 25     echo "Logged users:$shownum"
+						 26 fi
+						 27 
+						 28 if [ $showusers -eq 1 ]; then
+						 29     echo "they are:"
+						 30     who
+						 31 fi		
+		
 			
 			
 			
