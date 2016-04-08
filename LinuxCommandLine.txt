@@ -2065,8 +2065,247 @@ LFS: Linux from Scratch 从0开始构建Linux
 			/dev/hda
 			/dev/hdb
 			....
+		hda :
+			hda1:第一个主分区         一个分区就是一个独立的文件系统
+			hda2:第二个主分区
+			hda3：第三个主分区
+			hda4:第四个主分区
+			hda5 :逻辑分区     逻辑分区只能从编号5开始
+		
+		查看当前系统识别了几块硬盘
+			fdisk -l [/dev/sda1]  
+		
+		管理磁盘分区
+			fdisk /dev/sda 
+					p ： 显示当前硬件的分区，包括没保存的改动
+					n :	创建新分区
+						e:扩展分区
+						p:主分区
+					d : 删除一个分区
+					w : 保存并退出
+					q ：不保存退出
+					t : 修改分区类型
+					l ：显示所支持的所有类型
+					
+			创建分区之后，还要创建文件系统，才能被挂载和使用
+			高级格式化就是创建文件系统的
+			不要对已有数据的分区创建文件系统，重新创建文件系统会损坏原有系统
+				创建文件系统
+						mkfs : make file system  创建文件系统
+							   文件系统类型：
+											ext2 
+											ext3
+								只有内核中具有相应处理文件系统的模块，才能进行创建相应的文件系统
+								
+								cat /proc/filesystems ：可以查看 内核支持的文件系统类型
+				mkfs :
+					-t ：type 指定相应的文件系统类型, 加上分区即，不要对整个硬盘创建文件系统。
+						mkfs -t ext2 /dev/sda5  :对/dev/sda5分区指定ext2类型的文件系统
+			
+			专门管理ext系列的文件系统：
+				mke2fs ：不加 -j , 默认支持ext2
+							-j : 支持日志功能的ext3
+							-b ：指定块大小Block_Size，默认是4096，可用取值为1024、2048或4096
+									mke2fs -b 2048 /dev/sda6
+							-L :指定分区卷标，new-volume-label ，指定之后就可以通过卷标来引用这个分区
+									mke2fs -L MyData /dev/sda7
+									blkid 查看卷标
+							-m +n ：指定为预留给超级用户的块数百分比 为n%
+									mke2fs -m 3 /dev/sda8
+							-i +n ：设定为多少个字节创建一个inode,默认为8192，给出的数值应该为块大小的2^n倍
+									mke2fs -i 4096 /dev/sda9
+							-N +n：设定inode的个数为n
+							-F  : 强制创建文件系统
+							-E  : 用户指定额外文件系统属性
+				blkid :  用于查看磁盘或分区属性 UUID TYPE Label 卷标 
+							root@slave1:~# blkid /dev/sda1
+							/dev/sda1: UUID="2bdbe391-47ac-4de3-83d8-cbfc4a18052a" TYPE="ext2"
+						               UUID : 全局统一标示符 由系统统一生成的
+				e2label : 		
+							e2label /dev/sda7 : 用于查看卷标
+							e2label /dev/sda7 HelloMydata 设置新卷标为HelloMydata
+				tune2fs :调整文件系统的相关属性 无损创建
+						-j : 不损害原有数据情况下，将ext2升级为ext3文件系统， 注意不能降级
+								tune2fs -j /dev/sda5 ,然后用blkid查看文件类型
+						-L ：用于设定卷标
+								tune2fs -L Mydata /dev/sda5
+						-m ：调整预留百分比
+						-r :指定预留块数
+						-o :设定默认挂载选项，acl : Enable Posix Access Control Lists
+						-c +n：设定多少次才自检,当取 0或-1时，不自检，关闭此功能
+						-i +n: 每挂载多少天之后才进行自检，当取0或-1时，不自检，关闭此功能
+						-l : 显示超级块中的信息 superblock 是有备份的
+								tune2fs -l /dev/sda5
+				dumpe2fs :显示文件系统相关信息
+						  dumpe2fs /dev/sda5
+								-h ：只显示超级块信息
+						  
+						  
+									Group 0: (Blocks 1-8192)
+									  Primary superblock at 1, Group descriptors at 2-2
+									  Block bitmap at 3 (+2), Inode bitmap at 4 (+3)
+									  Inode table at 5-506 (+4)
+									  5625 free blocks, 3997 free inodes, 2 directories
+									  Free blocks: 520-6144
+									  Free inodes: 17, 21-4016
+									Group 1: (Blocks 8193-16384)
+									  Backup superblock at 8193, Group descriptors at 8194-8194
+									  Block bitmap at 8195 (+2), Inode bitmap at 8196 (+3)
+									  Inode table at 8197-8698 (+4)
+									  2049 free blocks, 4016 free inodes, 0 directories
+									  Free blocks: 14336-16384
+									  Free inodes: 4017-8032								
+							超级块在group 1 ，3,5,7,9,中有备份 
+				显示空闲块，也就是碎片
+					dumpe2fs /dev/mapper/ubuntu-root
+				
+				fsck  ：当文件系统出现错误，可以手动检查，并修复文件系统。check and repair a linux file system 
+						-t ：type 指定文件系统类型
+						-a : automaticlly repair the file system 自动修复文件系统。默认是询问，回复y
+				
+				e2fsck ：专门修复ext2，ext3，ext4文件系统的，  e2fsck - check a Linux ext2/ext3/ext4 file system
+						-f :强制检测
+						-p :自动修复
+						
+			挂载分区 ：挂载完成后，通过挂载点访问对应文件系统上的文件
+					将新的文件系统关联至当前根文件系统
+					mount :挂载，不带参数时，显示当前系统中挂载设备及挂载点 ，显示的是/etc/mtab文件中的内容
+						  mount [options] [-o options] Device Mount_Point
+								-a ： 表示挂载/etc/fstab文件中定义的所有的文件系统
+								-n :  默认情况下，mount 命令没挂载一个设备，都会把挂载的设备信息保存至/etc/mtab文件
+									  使用-n选项，意味着挂载设备时，不把信息写入此文件，静默了
+								-t FSType: 指定正在挂载设备上的文件系统的类型，不给出此选项， mount会调用blkid命令获取对应文件系统类型
+								-r : 只读挂载，挂载系统为只读，挂载光盘时，才使用此选项  ： mount -r /dev/cdrom /media/
+								-w : 读写挂载，挂载系统为读写，默认是读写挂载，当挂载为光盘时，有写保护的，只能是只读挂载
+												root@slave1:/# mount /dev/cdrom /media/
+												mount: block device /dev/sr0 is write-protected, mounting read-only
+								-o : 指定额外的挂载选项，也既指定文件系统启用的属性。
+										如 	async 异步写入
+											atime 时间戳 更新，每访问一次，就更新时间戳，对于访问量很大的情况而言，是没有意义的
+													每更新一个时间戳，就会产生一次IO, 会影响系统性能 ，可以关闭，noatime 
+											auto :是否支持-a 选项能自动挂载
+											default : 使用默认。rw,suid,dev,exec,auto,nouser,and async
+											dev  ： 如果设备有设备文件，是否可以启用他们
+											exec :  允许文件上的执行文件有执行权限，挂载u盘时，可以设置noexec，不让执行文件具有执行权限。防止病毒感染
+													这样u盘是只读的，而且没有执行权限
+											owner: 	允许普通用户挂载这个文件系统的
+											remount : 重新挂载当前文件系统 
+														mount -o remount /dev/cdrom /media
+											ro    : 挂载为只读
+														mount -o ro /dev/cdrom /media
+											rw    : 读写挂载
+											sync  : 同步写入
+											suid  : 启用suid功能， 启用特殊权限，这是一种不安全的做法
+									注意使用多个选项时，用逗号隔开
+														mount -o remount,ro /dev/cdrom [/media]
+														其中 挂载点可以省略,因为是重新挂载到原来的位置
+														
+									
+						mount 设备 挂载点  ： 挂载点就是目录
+							mount /dev/sda5 /mnt/test/
+							设备可选 ：
+								设备文件, /dev/sda5
+								卷标， LABEL=" "
+								UUID, UUID=" "
+							挂载点，其实就是某个目录，对这个目录的要求是
+									1. 此目录没有被其他进程使用
+									2. 目录得事先存在
+									3. 目录中原有的文件将会被暂时隐藏
+					挂载完成后，要通过挂载点访问对应文件系统上的文件；
+																	
+			卸载分区：
+					将某文件系统与当前根文件系统的关联关系移除
+					umount : 卸载文件系统
+						umount 设备
+					或 
+						umount 挂载点
+					卸载注意事项：
+							 挂载的设备没有被进程使用
+							
+								
+						
+						
+				
+				
+			
+			查看分区表
+				cat /proc/partitions 
+			让内核重读分区表
+				·partprobe
+					
+			
+ 		Linux分为高级格式化和低级格式化
+		
+				1. 低级格式化是格式化磁道
+				2. 高级格式化是创建文件系统的  mkfs -t ext3  创建ext3类型的文件系统
+			
+		文件操作：
+				open
+				read
+				write
+				close
+				create 
+				delete
+		
+		FAT32
+		NTFS
+		ISO9660
+		CIFS
+		
+		
+		
+		ext2
+		ext3
+		ext4
+		xfs
+		reiserfs
+		
+		
+		nfs
+		ocfs2
+		gfs2
+		
+		
+		用户模式 用户空间
+		内核模式 内核空间 内核提供VFS，才能支持多种文件系统
+					VFS
+						Virtual File System 
+							虚拟文件系统
+					inode : index node 	：inode号，权限，属组属主，时间戳，文件大小。等信息
+			bitmap : 位图 	   
+			superblock 超级块
+			block bitmap :块位图
+			inode bitmap ：inode位图
+			inode Table :inode 表
+			GDT ： Group Distraction Table 块组描述组表
 			
 			
+			ext3 ext2 
+				ext3 ： 支持日志的功能，journal file system 日志文件系统
+							先把文件inode存放在日志区，没有错误，就把文件存放在文件的数据区，如无损坏就把inode信息写入到
+							可以查看日志文件系统，查看损坏的文件。
+							缺点是，需要多一次的读写操作。
+
+				ext2 :	
+			
+			fdisk :
+			
+				
+			
+		练习 ：
+			1. 
+			2.
+			3.
+			4. 调整其预留的百分比为3%
+			
+			5. 以重新挂载的方式，挂载此文件系统为不更新时间戳，并验证其效果
+			
+			6. 对文件系统强行进行一次检测
+			
+			7. 删除复制而来的所有文件，并将此文件系统重新挂载为同步sync,而后复制/etc目录中的所有文件至此挂载点，体验其性能变化
+			
+			
+		
 			
 			
 			
