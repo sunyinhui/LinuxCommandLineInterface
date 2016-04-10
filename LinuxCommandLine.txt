@@ -2167,7 +2167,7 @@ LFS: Linux from Scratch 从0开始构建Linux
 						-f :强制检测
 						-p :自动修复
 						
-			挂载分区 ：挂载完成后，通过挂载点访问对应文件系统上的文件
+			挂载分区 ：挂载完成后，通过挂载点访问对应文件系统上的文件，系统重启后，挂载的分区将不存在
 					将新的文件系统关联至当前根文件系统
 					mount :挂载，不带参数时，显示当前系统中挂载设备及挂载点 ，显示的是/etc/mtab文件中的内容
 						  mount [options] [-o options] Device Mount_Point
@@ -2297,14 +2297,106 @@ LFS: Linux from Scratch 从0开始构建Linux
 			2.
 			3.
 			4. 调整其预留的百分比为3%
-			
+					tune2fs -m 3 -L DATA　／dev/sda7
 			5. 以重新挂载的方式，挂载此文件系统为不更新时间戳，并验证其效果
-			
+				stat /backup/initab
+				cat /backup/initab
+				stat 
+				
+				mount -o remount,notime /backup 
+				cat 
+				stat 
 			6. 对文件系统强行进行一次检测
-			
+					e2fsck -f /dev/sda7
 			7. 删除复制而来的所有文件，并将此文件系统重新挂载为同步sync,而后复制/etc目录中的所有文件至此挂载点，体验其性能变化
+				rm -rf /dev/sda7
+				mount -o remount ,sync  /backup
+				cp -r /etc/* /backup 
+42 swap分区
+
+		虚拟内存 
+		sharetime
 			
+			cpu: time slice
+			memory：虚拟内存
+			I/O：多路复用
+		
+		x86：支持虚拟地址寻址，线性地址
+		
+		fdisk命令中，调整分区类型为82
+		
+		创建文件交换分区: 
+			mkswap  /dev/sda8 将其格式化
 			
+		挂载分区：
+			swapon /dev/sda8
+				-a : 启用所有的定义在/etc/fstab文件中的交换设备
+		卸载分区：
+			swapoff /dev/sda8
+		
+		文件系统的配置文件/etc/fstab 文件系统表
+			所有写在/etc/fstab文件中的每个设备，系统在开机时会自动挂载
+		cat /etc/fstab
+			需要挂载的设备		挂载点	  文件系统类型		挂载选项		转储频率 		文件系统检测次序(只有根可以为1)
+			/dev/sda9			/mnt/test    ext3			 defaults 			0                0 
+				
+			
+		回环设备： 将文件模拟成设备，进行挂载
+			loopback 使用软件来模拟实现硬件
+			这种设备时一种伪设备，使得文件可以如同块设备一般被访问。
+			在使用之前，循环设备必须与现存文件系统上的文件相关联。
+			这种关联将提供给用户一个应用程序接口，接口将允许文件视为特殊文件使用
+			因此，如果文件中包含一个完整的文件系统，那么这个文件就能如同磁盘设备一样被挂载
+		
+		
+		
+		dd 命令：转换并复制文件
+			dd if=/etc/inittab of=/root/inittab
+				使用if指定数据来源inputfile ，of指定outputfile
+			dd与cp 不同的是 cp以文件为单位复制，而dd是以低层的数据流为单位
+				cp是从文件系统读取到内存，然后再把内存中的数据写入到文件系统中另外的区域
+				dd是从低层01数据，直接复制到文件系统的别处。
+			
+			dd 可以指定只复制文件的某部分
+				bs= 指定复制的blocksize字节是多大 bs=1024 以1024字节为单位
+				count= 复制多少个bs 
+				
+			dd的强大之处
+				dd if=/dev/sda of=/mnt/usb/mbr.backup bs=512 count=1   
+					硬盘的开头处512字节就是mbr
+					实现备份mbr
+				dd if/mnt/usr/mbr.backup of=/dev/sda bs=512 count=1
+					覆盖被损坏的mbr
+				dd 命令可以做系统镜像
+					
+		dd if=/dev/zero of=/dev/null bs=1M count=1024 
+			/dev/zero  输出指定大小的0, 
+			/dev/null  接收无限任意的数据
+			以子之矛，攻子之盾
+			
+		dd if=/dev/zero of=/var/swapfile bs=1M count=1024
+				1024+0 records in
+				1024+0 records out
+				1073741824 bytes (1.1 GB) copied, 38.8813 s, 27.6 MB/s
+			可以实现磁盘测试
+		mkswap  : 将文件创建成swap类型
+		mkswap /var/swapfile  :创建分区文件
+		swapon /var/swapfile  :启动分区文件
+		
+			
+		mount 可以挂载iso镜像 加参数 -o loop 作为本地回环设备
+			 mount -o loop /root/rhci-5.8-1.iso /media 
+			 
+		
+		fuser -v /mnt/test
+		fuser  : 显示哪些进程正在使用文件或套接字
+			-v : 查看某文件
+			-k : 杀死正在访问文件的进程
+			-m ：name 指定一个不同的命名空间，支持不同的空间文件，列出访问这个文件或文件系统的所有进程
+			-km :经常一起使用
+		fuer -km /mnt/test
+		
+		
 		
 			
 			
