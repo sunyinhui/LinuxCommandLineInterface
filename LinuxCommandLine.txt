@@ -1869,7 +1869,7 @@ LFS: Linux from Scratch 从0开始构建Linux
 			
 40  case ：选择语句
 			case SWITCH in 
-					value1)
+					value1) 
 						statement
 						...
 						;;		# 必须以双分号结尾
@@ -2394,10 +2394,161 @@ LFS: Linux from Scratch 从0开始构建Linux
 			-k : 杀死正在访问文件的进程
 			-m ：name 指定一个不同的命名空间，支持不同的空间文件，列出访问这个文件或文件系统的所有进程
 			-km :经常一起使用
-		fuer -km /mnt/test
+		fuer -km /mnt/test  ： 终止正在访问挂载点的所有进程
+		
+		
+		练习 ：
+			1. 创建一个5G分区, 文件系统为ext3，卷标为Mydata,块大小为1024，预留管理空间为磁盘分区的3%，要求开机后可以自动挂载至/data目录
+					并且挂载的设备要使用卷标进行引用
+			
+			2. 创建一个本地回环文件/var/swaptemp/swapfile 用于swap ,要求大小为512M,卷标为SWAP-FILE,且开机自动启动此交换设备
+				mkdir /var/swaptemp/swapfile 
+				dd if=/dev/zero of=/var/swaptemp/swapfile bs=1M count=512
+				mkswap LABLE=SWAP-FILE  /var/swaptemp/swapfile 
+				
+				打开 vim /etc/fstab 添加一行
+				/var/swaptemp/swapfile   swap swap defaults 0 0 
+			
+			3. 上题，如何让其自动挂载的同时启动ACL 功能
+				vim /etc/fstab 
+				LABEL='Mydata'  /data  ext3  defaults,acl 0 0 
+				
+				
+43. 压缩、解压、归档
+		压缩格式有 gz bz2 xz zip Z 
+		
+		
+		gzip:  .gz  
+			使用 gzip filename : 会删除原文件，得到 filename.gz 而压缩目录会对目录下的所有文件进行压缩
+			gzip -d filename.gz  也能解压缩文件
+				 -d ： --decompress 
+			gzip -n : 指定压缩比，默认是6
+		gunzip: 解压缩
+			gunzip filename.gz ：解压完后也会删除原文件
+		zcat ：在不解压文件的情况下，查看压缩后的文件。
+			  cat 查看会乱码
+			  zcat filename.gz 
+			
+		bzip2: .bz2 比gzip有着更大压缩比的工具,使用格式类似, 只能压缩文件，不能压缩目录，压缩也会删除原文件
+			bzip2 /path/to/file   ： 压缩
+			bzip2 -d /path/to/file.bz2 : 解压缩 会删除原文件
+				  -k : keep 会保留原文件 
+			bunzip2 /path/to/file.bz2 ： 解压缩
+			bzcat /path/to/file : 不解压查看
+		
+		
+		xz: .xz   用法与bzip2 相同
+			xz /path/to/file   ： 压缩
+			xz -d /path/to/file.bz2 : 解压缩 会删除原文件
+				  -k : 会保留原文件
+			unxz /path/to/file.bz2 ： 解压缩
+			xzcat /path/to/file : 不解压查看
+		
+		zip : 压缩后默认不删除原文件 package and compress (archive) files 可以压缩目录  
+			zip + 压缩后的文件名.zip  + 压缩的文件或目录...
+			zip filename.zip file1 file2 ...
+			unzip filename.zip 
+		tar : 实现归档，但不压缩 .tar
+			-c ：创建归档文件
+			-f file.tar : 将文件夹归档为file.tar 文件
+				tar -cf test.tar test*.txt
+				把test开头的txt文件归档为test.tar
+			-x : 还原归档
+				tar -xf test.tar
+			--xattrs : 	归档时，保留文件的扩展属性信息
+						在备份是很重要
+			-t : 不打开归档文件，就能查看里面的文件.
+				tar -tf test.tar
+			-z ： 调用压缩gzip和解压缩命令gunzip
+			-zcf ：归档并调用gzip压缩
+			-zxf ：调用gunzip解压缩并展开归档
+			
+			-j :调用压缩bzip2和解压缩
+			-jcf : 归档并调用bzip2
+					tar -jcf test.tar.bz2 test*.txt
+			-jxf : 调用bunzip解压缩并展开归档
+					tar -jxf test.tar.bz2
+			
+			-J :调用压缩xz和解压缩
+			-Jcf ： 归档并调用xz压缩
+					tar -Jcf test.tar.xz  test*.txt
+			-Jxf :  调用unxz解压缩并展开归档
+			-Jtf : 不解压，直接看里面的内容
+	
+	cpio : 归档工具
+		
+		
+		练习 ： 写一个脚本
+		从键盘让用户输入几个文件，脚本能够将此几个文件归档压缩成一个文件  脚本与用户交互 read 
+					
+			  1 #!/bin/bash
+			  2 #
+			  3 
+			  4 echo -n  "Input two Integers:"
+			  5 
+			  6 read A B
+			  7 echo "$A plus $B is: $[ $A + $B ] "
+		read :
+			-p : 提示信息 prompt
+				  1 #!/bin/bash
+				  2 #
+				  3 read -p "Three files :" FILE1 FILE2 FILE3
+				  4 read -p "Destination :" DEST
+				  5 
+				  6 tar -jcf ${DEST}.tar.bz2 $FILE1 $FILE2 $FILE3
+
+
+		  1 #!/bin/bash
+		  2 # 
+		  3 read -p "Three files: " file1 file2 file3
+		  4 read -p "Destination :" dest
+		  5 read -p "Compress[gzip|bzip2|xz] :" comp
+		  6 
+		  7 case $comp in
+		  8     gzip)
+		  9         tar -zcf ${dest}.tar.gz $file1 $file2 $file3;;
+		 10     bzip2)
+		 11         tar -jcf ${dest}.tar.bz2 $file1 $file2 $file3;;
+		 12     xz)
+		 13         tar -cf ${dest}.tar  $file1 $file2 $file3
+		 14         xz ${dest}.tar;;
+		 15     *)
+		 16         echo "Unkown compress"
+		 17         exit 9
+		 18         ;;
+		 19 esac
+				  
+44 while 循环  使用于循环次数未知的情况
+		
+		while CONDITION ; do
+			statement
+			....
+		done
+		
+		练习 计算 100以内正整数的和
+			  1 #!/bin/bash
+			  2 #
+			  3 declare -i I=1
+			  4 declare -i SUM=0
+			  5 
+			  6 while [ $I -le 100 ]; do
+			  7    let  SUM+=$I
+			  8    let  I++
+			  9 done
+			 10 
+			 11 
+			 12 echo $SUM
+
+45 磁盘管理
+		安装RHEL6.3 x86_64的方法，前提确保你的cpu支持硬件虚拟化技术
+			1、创建虚拟机
+			2、下载isos	
 		
 		
 		
+		
+			  
+			
 			
 			
 			
