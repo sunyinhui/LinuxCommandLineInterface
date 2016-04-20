@@ -2540,24 +2540,162 @@ LFS: Linux from Scratch 从0开始构建Linux
 			 12 echo $SUM
 
 45 磁盘管理
+		
+		写一个脚本， 显示一个菜单给用户，
+					d|D) show disk usage.
+					m|M) show memory usage.
+					s|S) show swap usage
+					*) quit
+		当用户选定给定选项后显示相应的内容。
+		当用户选择完成，显示相应信息后，不退出，而让用户从新选择，除非用户输入quit则退出。
+						#!/bin/bash
+						# 
+						cat << EOF
+						d|D) show disk usage.
+						m|M) show memory usage.
+						s|S) show swap usage
+						*) quit
+						EOF
+
+						read -p "Your choice:" CHOICE
+						while [ $CHOICE != 'quit'  ];do
+								case $CHOICE in
+								d|D)
+										echo "Disk usage:"
+										df -h ;;
+								m|M)
+										echo "Memory usage:"
+										free -m | grep "Mem";;
+								s|S)
+										echo "Swap usage:"
+										free -m | grep "Swap";;
+								*)
+										echo "Unknow";;
+								esac
+
+						read -p "Again your choice:" CHOICE
+						done
+				扩展  显示有用信息时加上颜色
+				
+		
 		安装RHEL6.3 x86_64的方法，前提确保你的cpu支持硬件虚拟化技术
 			1、创建虚拟机
-			2、下载isos	
-		
-		
-		
-		
+			2、下载isos目录中的rhci-rhel-6.3.1-1.iso，并导入虚拟机的虚拟光驱
+			3、在boot提示符输入：linux ip=172.16.x.1 network=255.255.0.0 gateway=172.16.0.1 dns=172.16.0.1 ks=http://172.16.0.1/rhel16.cfg
+			
+		watch: 周期性的执行指定命令，并以全屏方式显示结果
+				-n # ：指定周期长度，单位为秒，默认为2s
+			watch -n # 'command'  	
 			  
+		madam : 用户空间工具，管理工具
+		
+		md  multi device
+				/dev/md0
+				/dev/md#
+		dm  ：Device Mapper
+				逻辑设备
+					更为强大，提供RAID(磁盘阵列) 、LVM2(逻辑卷)
+				
+			
+		一、扩展逻辑卷
+			lvextend  先扩展物理边界
+			resize2fs 再扩展逻辑边界
+		
+		二、缩减逻辑卷
+			
+			确保缩减后的空间大小依然能够存储原有所有数据
+			不能在线缩减，得先缩减
+			在缩减之前强行检查文件系统，确保文件处于一致性状态
+			df -h 
+			umount 
+			e2fsck -f 
+			
+			先缩减逻辑边界
+			然后再缩减物理边界
+			resize2fs 
+			lvreduce
+		
+		三、快照卷
+			
+			1 生命周期为整个数据时长，在这段时长内，数据的增长量不能超出快照卷大小
+			2 快照卷应该是只读的
+			3 跟原卷在同一卷组内
 			
 			
+			lvcreate 
+					-s :指定快照卷
+					-p r|w  ：指定为只读和写
+					-L ：大小
+					-n : 指定快照卷名称
 			
+			lvcreate -L # -n SLV_NAME -s -p r /path/to/LV
+
+46 until 脚本编程控制结构
+		
+		顺序
+		选择
+			if 
+			case
 			
+		循环
+			for
+				for c语言风格
+
+					for ((exp1; exp2; exp3)) ; do
+						statement
+					done
+					
+					
+				eg:
+					  1 #!/bin/bash
+					  2 declare -i SUM=0
+					  3 for I in {1..100};do
+					  4     SUM+=$I
+					  5 done
+					  6 echo "SUM=$SUM "
+					  7 echo "I=$I"
+					  8 declare -i SUM2=0
+					  9 for ((J=0;J<=100;J++));do
+					 10     SUM2+=$J
+					 11 done
+					 12 echo "SUM2=$SUM2"
+
+					
+					
 			
+			while
+			until 
+		
+		条件不满足，进入循环，直到条件满足退出循环
+		until command;	do
+			statement
+			...
+		done
+		
+		
+				#!/bin/bash
+				#
+				read -p "Input Something:" STRING
+				until [ $STRING == 'quit' ];do
+						echo $STRING | tr 'a-z' 'A-Z'
+						read -p "Again Input Something:" STRING
+				done
+						
+		练习 写一个脚本
+				1. 通过ping命令测试192.168.0.151到192.168.0.254之间的所有主机是否在线
+				如果在线，就显示“ip is up.” 其中ip要转换为真正的主机地址，且以绿色显示
+				如果不在线，就显示“ip is down” ,同上，但要以红色显示
+ 			要求分别使用while for until 实现.
 			
+			ping -c 1 192.168.1.7
+			echo $?
 			
-			
-			
-			
+			man ping  
+				-c :次数 stop aster sending count ECHO_REQUEST 
+				-W :超时退出
+				
+			ping  -c 1 -W 192.168.1.7 &> /dev/null
+			echo $?
 			
 			
 			
