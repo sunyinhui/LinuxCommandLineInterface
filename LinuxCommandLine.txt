@@ -3138,28 +3138,216 @@ LFS: Linux from Scratch 从0开始构建Linux
 			runlevel 
 			who -r 
 			
-	查看内核版本号
+	查看内核release号
 			uname -r 
+		
+52 修复、安装grub
+			
+		第一种方式：
+					# grub
+					grub> root (hd0,0)
+					grub> set (hd0)
+					grub> reboot 
+		第二种方式：
+					# grub-install --root-directory=/path/to/boot's parent dir  /path/to/device
+					
+		修复grub 
+			grub> root (hd0,0)  # 注意支持find命令 find (hd0,0)/ 可以查看vmlinuz...是否存在
+			grub> kernel /vmlinuz...  # 支持tab补全 指明kernel
+			grub> initrd /initrd-...   # initrd (ramdisk)
+			grub> boot 
+			
+ 		kernel初始化的过程
+			1、设备探测
+			2、驱动初始化 从initrd模块中装载驱动模块
+			3、以只读挂载根文件系统
+			4、装载第一个进程init(PID:1)
+			
+			
+		/sbin/init:( /etc/inittab)
+			
+	内核模块管理
+			lsmod : 查看
+			modprob mod_name : 装载某模块
+			modprobe -r mod_name : 卸载某模块
+			
+			modinfo mod_name : 查看模块的具体信息
+			
+			insmod /path/to/module_name : 装载模块
+			rmmod /path/to/module_name :卸载模块
+			
+			depmod /path/to/module_dir 
+				
+	系统裁剪		
+		/etc/issue 文件的内容
+	
+	
+	    rc.sysinit: 挂载/etc/fstab中定义的其他文件系统
 		
 			
 			
+		查看本机硬件设备信息
+				1、cat /proc/cupinfo
+				2、lsusb 
+				3、lspci
+				4、hal-device 
+						Hardware Abstract Layer 硬件抽象层
 			
+		编译内核
+			1 配置
+				make memuconfig
+				make gconfig
+				make kconfig
+					make oldconfig
+					make config
+				保存为.config
+			2 安装
+				make 
+				make modules_install 
+				make install 
+				
+				模块安装位置在： /lib/modules/Kernek——version/
 			
+		如何实现部分编译：
+			1 只编译某子目录下的相关代码
+				make dir/
+					make arch/
+					make drivers/net/
+					
+			2 只编译部分模块
+				make M=drivers/net/  ：只编译与网络相关的模块
+				
+			3 只编译某一模块
+				make drivers/net/pcnet32.ko
+			4 将编译过完成的结果放置于别的目录中
+				make O=/tmp/kernel
+			5 交叉编译
+				make ARCH=
 			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
+53  变量赋值
+	
+			1	表达式的值
+					${parameter:-word} : 如果parameter为空或未定义，则表达式的值展开为word,否则，展开为parameter的值 
+										A=${A:-30} :如果A不为空，则A取原来的值，如果A为空，则A取30
+					${parameter:+word} : 如果parameter为空或未定义，不做任何操作,否则，表达式的值展开为word的值
+										${A:+30} :如果A不为空，则A取30， 如果A为空，则A取空值
+					${parameter:=word} : 如果parameter为空或未定义，则将表达式展开为word, 并将展开后的值赋给parameter 
+										${A:=word}: 如果A为空，则表达式展开为30，并将30赋给A, 如果A不为空，则将A的值展开为表达式的值
+										
+					截取子串，做字符串切片					
+					${parameter:offset} 
+					${parameter:offset:length} : 取子串 从offset处的后一个字符开始、取length长的子串 
+						A='Hello world'
+						echo ${A:2}
+						echo ${A:2:3}
+							root@slave1:~# A='hello world'
+							root@slave1:~# echo ${A:2}
+							llo world
+							root@slave1:~# echo ${A:2:3}
+							llo
+			2   变量中字符的长度：${#VarName}
+								root@slave1:~# echo $A
+								hello world
+								root@slave1:~# echo ${#A}
+								11
+
+			3   脚本配置文件
+				服务脚本支持配置文件： /etc/sysconfig/服务脚本同名的配置文本
+				
+				如何让脚本使用配置文件
+					在脚本中添加一行
+						. /path/to/config ： 表示使配置文件生效
+					或  source /path/to/config 	
+		    4   函数中的局部变量和全局变量同名怎么办？
+						  1 #!/bin/bash
+						  2 # 
+						  3 a=1
+						  4 test() {
+						  5 local a=$[3+4]   # 加上local 就只在函数内部有效， 输出1,2,3...10  不加则输出7,8,9,10 
+						  6 }
+						  7 test
+						  8 
+						  9 for I in `seq $a 10` ;do
+						 10     echo $I
+						 11 done
+				局部变量定义  local Var_Name = ...				
+				不加local且与全局变量重名，则函数内改变的值会影响全局变量，也就是说，函数就会操作全局变量	
+				
+54  mktemp  创建临时文件或目录
+		
+		mktemp /tmp/file.XX  : 在file后面添加.XX可以避免文件重名
+		此命令直接返回文件的路径
+		FILE=`mktemp /tmp/file.XX`
+		echo $FILE
+				
+			-d ： 创建临时目录
+		mktemp -d /tmp/file.XXXX 
+		
+55  在脚本中实现信号捕捉 
+		kill -Single PID 
+				1 UP
+				2 INT
+				9 KILL
+			    15 TERM 
+		
+		在脚本中实现信号捕捉 但捕捉不了9和15
+		
+	trap :
+		trap 'command' 信号列表 					
+		
+				  1 #!/bin/bash
+				  2 
+				  3 # 
+				  4 trap 'echo "quit" ; exit 1 ' INT    # 一行执行多个语句，语句间用分号分隔即可
+				  5 NET=192.168.1.
+				  6 for I in {200..254} ; do
+				  7     if ping -c 1 -W 1 $NET$I &> /dev/null; then
+				  8         echo "$NET$I is up "
+				  9     else
+				 10         echo "$NET$I is down"
+				 11     fi
+				 12 done
+		改进
+				  1 #!/bin/bash
+				  2 #在exit之前，清除临时文件、等等，必要的操作可以放在cleanup函数中
+				  3 #
+				  4 cleanup() {
+				  5  echo 'quit...'
+				  6  exit 1
+				  7 
+				  8 }
+				  9 trap 'cleanup' INT
+				 10 NET=192.168.1.
+				 11 for I in {200..254} ; do
+				 12     if ping -c 1 -W 1 $NET$I &> /dev/null; then
+				 13         echo "$NET$I is up "
+				 14     else
+				 15         echo "$NET$I is down"
+				 16     fi
+				 17 done
+		
+		再改进
+				  1 #!/bin/bash
+				  2 #在exit之前，清除临时文件、等等，必要的操作可以放在cleanup函数中
+				  3 #清除临时文件 
+				  4 FILE=`mktemp /tmp/file.XXXX`
+				  5 cleanup() {
+				  6  echo 'quit...'
+				  7  rm -f $FILE
+				  8  exit 1
+				  9 
+				 10 }
+				 11 trap 'cleanup' INT
+				 12 NET=192.168.1.
+				 13 for I in {200..254} ; do
+				 14     if ping -c 1 -W 1 $NET$I &> /dev/null; then
+				 15         echo "$NET$I is up " 
+				 16     else
+				 17         echo "$NET$I is down" | tee >> $FILE
+				 18     fi
+				 19 done
+		
+56  			
 			
 			
 			
