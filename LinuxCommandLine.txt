@@ -3211,7 +3211,8 @@ LFS: Linux from Scratch 从0开始构建Linux
 		如何实现部分编译：
 			1 只编译某子目录下的相关代码
 				make dir/
-					make arch/
+					make SUNDIR=arch/
+					make arch/X86
 					make drivers/net/
 					
 			2 只编译部分模块
@@ -3223,6 +3224,81 @@ LFS: Linux from Scratch 从0开始构建Linux
 				make O=/tmp/kernel
 			5 交叉编译
 				make ARCH=
+				
+		硬件驱动： initrd 
+				initrd：仅需要提供内核访问真正的根文件系统所在的设备需要的驱动，存储设备和文件系统相关的模块
+				rc.sysinit:初始化其他硬件的驱动
+				
+		syslog服务：
+					syslogd: s代表系统 非内核产生的信息
+					klogd:   k代表内核，专门负责记录内核产生的日志信息  /var/log/dmesg ; 或命令dmesg直接显示/var/log/dmesg文件信息
+					
+		日志需要滚动，防止日志文件过大
+		日志滚动也叫作日志切割 
+				logrotate: 滚动、压缩、发送系统日志
+		/sbin/init
+					/var/log/messages : 系统标准错误日志信息，非内核产生引导信息，各子系统产生的信息
+					/var/log/maillog : 邮件系统产生的日子信息
+					/var/log/secure
+					
+			配置文件定义格式为: facility.priority        action 
+			 facility,可以理解为日志的来源或设备目前常用的facility有以下几种： 
+				auth      			# 认证相关的 
+				authpriv  			# 权限,授权相关的 
+				cron      			# 任务计划相关的 
+				daemon    			# 守护进程相关的 
+				kern      			# 内核相关的 
+				lpr      			 # 打印相关的 
+				mail     			 # 邮件相关的 
+				mark     			 # 标记相关的 
+				news     			 # 新闻相关的 
+				security 			# 安全相关的,与auth 类似  
+				syslog  			 # syslog自己的 
+				user    			 # 用户相关的 
+				uucp    			 # unix to unix cp 相关的 
+				local0 到 local7 	# 用户自定义使用 
+				*        			# *表示所有的facility 
+			 
+			 priority(log level)日志的级别,一般有以下几种级别(从低到高) 
+				debug           # 程序或系统的调试信息 
+				info            # 一般信息
+				notice          # 不影响正常功能,需要注意的消息 
+				warning/warn    # 可能影响系统功能,需要提醒用户的重要事件 
+				err/error       # 错误信息 
+				crit            # 比较严重的 
+				alert           # 必须马上处理的 
+				emerg/panic     # 会导致系统不可用的 
+				*               # 表示所有的日志级别 
+				none            # 跟* 相反,表示啥也没有 
+				 
+			 action(动作)日志记录的位置 
+				系统上的绝对路径    # 普通文件 如： /var/log/xxx 
+				|                   # 管道  通过管道送给其他的命令处理 
+				终端                # 终端   如：/dev/console 
+				@HOST               # 远程主机 如： @10.0.0.1      
+				用户                # 系统用户 如： root 
+				*                   # 登录到系统上的所有用户，一般emerg级别的日志是这样定义的 
+					
+				定义格式例子： 
+				mail.info   /var/log/mail.log # 表示将mail相关的,级别为info及 
+											  # info以上级别的信息记录到/var/log/mail.log文件中 
+				auth.=info  @10.0.0.1         # 表示将auth相关的,基本为info的信息记录到10.0.0.1主机上去 
+											  # 前提是10.0.0.1要能接收其他主机发来的日志信息 
+				user.!=error                  # 表示记录user相关的,不包括error级别的信息 
+				user.!error                   # 与user.error相反 
+				*.info                        # 表示记录所有的日志信息的info级别 
+				mail.*                        # 表示记录mail相关的所有级别的信息 
+				*.*                           # 你懂的. 
+				cron.info;mail.info           # 多个日志来源可以用";" 隔开 
+				cron,mail.info                # 与cron.info;mail.info 是一个意思 
+				mail.*;mail.!=info            # 表示记录mail相关的所有级别的信息,但是不包括info级别的 					
+				
+				
+		
+		日志系统：syslog  syslog-ng 
+				信息详细程序，日志级别
+				子系统 facility 设施
+				动作：
 			
 53  变量赋值
 	
@@ -3347,10 +3423,101 @@ LFS: Linux from Scratch 从0开始构建Linux
 				 18     fi
 				 19 done
 		
-56  			
+56  任务计划
+		1  在未来的某个时间点执行一次某一次
+			at 
+			batch
+					其中batch不需要指定时间，系统自动选择空闲时间执行
 			
+			at 时间 
+			at> command
+			at> Ctrl + d   ： 执行
+				指定时间 ：
+					10:30  ：在10点30分
+					now+3m :三分钟以后
+					绝对时间：HH:MM
+							  DD.MM.YY
+							  MM/DD/YY
+					相对时间：now+#单位
+							 单位：minutes hours days weeks
+					模糊时间：noon  midnight  teatime
+			命令的执行结果：将以邮件的方式发送给安排任务的用户
+					root@slave1:~# at now+1minutes
+					warning: commands will be executed using /bin/sh
+					at> ls /var   
+					at> cat /etc/fstab
+					at> <EOT>    # 触发了Ctrl + d 
+					job 2 at Sat Apr 30 16:54:00 2016   
+					root@slave1:~#
+					
+			at -l = atq: 显示任务队列
+			at -d AT_JOB_ID = atrm AT_JOB_ID ：删除任务队列
+		
+		2  周期性的执行某任务
+			cron：是一个不间断运行的服务，默认是长时间不会关机，当主机提前关机，重启后 任务将不会被执行
+			anacron:是cron的补充，能够实现让cron因为各种原因在过去的时间该执行未执行的任务再恢复正常执行一次
 			
+			cron：
+				 系统cron任务
+								/etc/crontab
+								
+							root@slave1:~# cat /etc/crontab 
+							# /etc/crontab: system-wide crontab
+							# Unlike any other crontab you don't have to run the `crontab'
+							# command to install the new version when you edit this file
+							# and files in /etc/cron.d. These files also have username fields,
+							# that none of the other crontabs do.
+
+							SHELL=/bin/sh
+							PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+						    分钟 小时 天 月 周 用户 任务
+							# m h dom mon dow user	command
+							17 *	* * *	root    cd / && run-parts --report /etc/cron.hourly
+							25 6	* * *	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+							47 6	* * 7	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
+							52 6	1 * *	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
+							#
+
+				 用户cron任务
+								/var/spool/cron/username 
+								分钟 小时 天 月 周  任务  # 没有用户
+					时间的有效取值：
+								分钟：0-59
+								小时：0-23
+								天  ：1-31
+								月  ：1-12
+								周  ：0-7 0和7都表示周日
+								
+					时间的通配表示：
+								*：所有对应的有效取值： 3 * *　*  *  :每个小时的3分钟
+								,: 离散时间点取值 10,40 * * * :每小时的第10分和第40分
+								-：连续时间点取值 10 02 * * 1-5:周一到周五的每天两点10分
+								/#: 表示对应取值范围内每多久一次
+									*/3 * * * * : 每三分钟一次 
+							每两个小时执行一次
+								    01 /2 * * * : 每隔2小时执行一次。其中第一位可取0-59的任意值。对比 * /2 * * * :表示每两小时的每个分钟都要执行
+									01 03 /2 * * : 每隔两天执行一次。前两位可取有效数字的任意数
+									
+					cron的执行结果和at一样将以邮件的形式发给管理员。问题来了，执行成功了，如果以非常高的频率分发，则垃圾邮件太多
+							设定重定向 
+							*/3 * * * * /bin/cat /etc/fstab > /dev/null : 正常结果会送到/dev/null中，而错误结果会以邮件方式发给管理员
+							
+					cron环境变量： cron 执行的所有命令都要去PATH环境变量指定路径下去找
+							PATH  /bin:/sbin:/usr/bin:/usr/sbin
 			
+			用户任务的管理
+				crontab 
+						-l : 列出当前用户所有周期性任务
+						-e : 编辑 并且有语法检查
+						-r : 移除所有任务
+						-u UserName: 管理其他用户的cron任务
+							crontab -u hadoop -e : 以hadoop的身份编辑自己的cron任务
+							-ur ：删除指定的用户的cron任务
+						
+			anacron :  代替cron在系统启动后执行cron错过的任务,最小执行时间单位是天
+					cat /etc/anacron
+					
+					
 			
 			
 			
